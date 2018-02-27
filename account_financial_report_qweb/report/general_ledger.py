@@ -280,14 +280,9 @@ class GeneralLedgerReportCompute(models.TransientModel):
                 SUM(ml.debit) AS debit,
                 SUM(ml.credit) AS credit,
                 SUM(ml.balance) AS balance,
-                CASE
-                    WHEN COUNT(c.name) = COUNT(1)
-                        AND MIN(c.name) = MAX(c.name)
+                CASE WHEN COUNT(c.name) = COUNT(1) 
                     THEN MAX(c.name) END AS currency_name,
-                CASE
-                    WHEN COUNT(c.name) = COUNT(1)
-                        AND MIN(c.name) = MAX(c.name)
-                    THEN SUM(ml.amount_currency) END AS balance_currency
+                SUM(ml.amount_currency) AS balance_currency
             FROM
                 accounts a
             INNER JOIN
@@ -330,7 +325,7 @@ class GeneralLedgerReportCompute(models.TransientModel):
             """
         sub_subquery_sum_amounts += """
         LEFT JOIN
-            res_currency c ON ml.currency_id = c.id
+            res_currency c ON ml.currency_id = c.id        
         """
         sub_subquery_sum_amounts += """
         GROUP BY
@@ -557,14 +552,9 @@ AND
                 SUM(ml.debit) AS debit,
                 SUM(ml.credit) AS credit,
                 SUM(ml.balance) AS balance,
-                CASE
-                    WHEN COUNT(c.name) = COUNT(1)
-                        AND MIN(c.name) = MAX(c.name)
+                CASE WHEN COUNT(c.name) = COUNT(1) 
                     THEN MAX(c.name) END AS currency_name,
-                CASE
-                    WHEN COUNT(c.name) = COUNT(1)
-                        AND MIN(c.name) = MAX(c.name)
-                    THEN SUM(ml.amount_currency) END AS balance_currency
+                SUM(ml.amount_currency) AS balance_currency
             FROM
                 accounts_partners ap
             INNER JOIN
