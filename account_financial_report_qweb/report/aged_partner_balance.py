@@ -197,6 +197,22 @@ class AgedPartnerBalanceReportCompute(models.TransientModel):
         return self.env['report'].get_action(docids=self.ids,
                                              report_name=report_name)
 
+    def _get_html(self):
+        result = {}
+        rcontext = {}
+        context = dict(self.env.context)
+        report = self.browse(context.get('active_id'))
+        if report:
+            rcontext['o'] = report
+            result['html'] = self.env.ref(
+                'account_financial_report_qweb.'
+                'report_aged_partner_balance').render(rcontext)
+        return result
+
+    @api.model
+    def get_html(self, given_context=None):
+        return self._get_html()
+
     def _prepare_report_open_items(self):
         self.ensure_one()
         return {
