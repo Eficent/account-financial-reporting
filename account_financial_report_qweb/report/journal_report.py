@@ -7,9 +7,9 @@ from odoo import models, fields, api
 DIGITS = (16, 2)
 
 
-class ReportJournalQweb(models.TransientModel):
+class ReportJournalLedger(models.TransientModel):
 
-    _name = 'report_journal_qweb'
+    _name = 'report_journal_ledger'
 
     date_from = fields.Date(
         required=True
@@ -41,40 +41,40 @@ class ReportJournalQweb(models.TransientModel):
         comodel_name='account.journal',
         required=True,
     )
-    report_journal_ids = fields.One2many(
-        comodel_name='report_journal_qweb_journal',
+    report_journal_ledger_ids = fields.One2many(
+        comodel_name='report_journal_ledger_journal',
         inverse_name='report_id',
     )
     report_move_ids = fields.One2many(
-        comodel_name='report_journal_qweb_move',
+        comodel_name='report_journal_ledger_move',
         inverse_name='report_id',
     )
     report_move_line_ids = fields.One2many(
-        comodel_name='report_journal_qweb_move_line',
+        comodel_name='report_journal_ledger_move_line',
         inverse_name='report_id',
     )
-    report_journal_tax_line_ids = fields.One2many(
-        comodel_name='report_journal_qweb_journal_tax_line',
+    report_journal_ledger_tax_line_ids = fields.One2many(
+        comodel_name='report_journal_ledger_journal_tax_line',
         inverse_name='report_id',
     )
     report_tax_line_ids = fields.One2many(
-        comodel_name='report_journal_qweb_report_tax_line',
+        comodel_name='report_journal_ledger_report_tax_line',
         inverse_name='report_id',
     )
-    with_currency = fields.Boolean()
+    foreign_currency = fields.Boolean()
     with_account_name = fields.Boolean()
 
     @api.model
     def _get_move_targets(self):
-        return self.env['journal.report.wizard']._get_move_targets()
+        return self.env['journal.ledger.report.wizard']._get_move_targets()
 
     @api.model
     def _get_sort_options(self):
-        return self.env['journal.report.wizard']._get_sort_options()
+        return self.env['journal.ledger.report.wizard']._get_sort_options()
 
     @api.model
     def _get_group_options(self):
-        return self.env['journal.report.wizard']._get_group_options()
+        return self.env['journal.ledger.report.wizard']._get_group_options()
 
     @api.multi
     def compute_data_for_report(self):
@@ -88,17 +88,23 @@ class ReportJournalQweb(models.TransientModel):
         if self.group_option == 'none':
             self._inject_report_tax_values()
 
-    @api.multi
-    def refresh(self):
-        self.ensure_one()
-        self.report_journal_ids.unlink()
-        self.compute_data_for_report()
+        # Refresh cache because all data are computed with SQL requests
+        self.invalidate_cache()
 
     @api.multi
     def _inject_journal_values(self):
         self.ensure_one()
         sql = """
-            INSERT INTO report_journal_qweb_journal (
+            DELETE
+            FROM report_journal_ledger_journal
+            WHERE report_id = %s
+        """
+        params = (
+            self.id,
+        )
+        self.env.cr.execute(sql, params)
+        sql = """
+            INSERT INTO report_journal_ledger_journal (
                 create_uid,
                 create_date,
                 report_id,
@@ -139,6 +145,15 @@ class ReportJournalQweb(models.TransientModel):
     @api.multi
     def _inject_move_values(self):
         self.ensure_one()
+        sql = """
+            DELETE
+            FROM report_journal_ledger_move
+            WHERE report_id = %s
+        """
+        params = (
+            self.id,
+        )
+        self.env.cr.execute(sql, params)
         sql = self._get_inject_move_insert()
         sql += self._get_inject_move_select()
         sql += self._get_inject_move_where_clause()
@@ -149,11 +164,11 @@ class ReportJournalQweb(models.TransientModel):
     @api.multi
     def _get_inject_move_insert(self):
         return """
-            INSERT INTO report_journal_qweb_move (
+            INSERT INTO report_journal_ledger_move (
                 create_uid,
                 create_date,
                 report_id,
-                report_journal_id,
+                report_journal_ledger_id,
                 move_id,
                 name,
                 company_id
@@ -167,14 +182,14 @@ class ReportJournalQweb(models.TransientModel):
                 %s as create_uid,
                 NOW() as create_date,
                 rjqj.report_id as report_id,
-                rjqj.id as report_journal_id,
+                rjqj.id as report_journal_ledger_id,
                 am.id as move_id,
                 am.name as name,
                 am.company_id as company_id
             FROM
                 account_move am
             INNER JOIN
-                report_journal_qweb_journal rjqj
+                report_journal_ledger_journal rjqj
                     on (rjqj.journal_id = am.journal_id)
         """
 
@@ -226,11 +241,20 @@ class ReportJournalQweb(models.TransientModel):
     def _inject_move_line_values(self):
         self.ensure_one()
         sql = """
-            INSERT INTO report_journal_qweb_move_line (
+            DELETE
+            FROM report_journal_ledger_move_line
+            WHERE report_id = %s
+        """
+        params = (
+            self.id,
+        )
+        self.env.cr.execute(sql, params)
+        sql = """
+            INSERT INTO report_journal_ledger_move_line (
                 create_uid,
                 create_date,
                 report_id,
-                report_journal_id,
+                report_journal_ledger_id,
                 report_move_id,
                 move_line_id,
                 account_id,
@@ -256,7 +280,7 @@ class ReportJournalQweb(models.TransientModel):
                 %s as create_uid,
                 NOW() as create_date,
                 rjqm.report_id as report_id,
-                rjqm.report_journal_id as report_journal_id,
+                rjqm.report_journal_ledger_id as report_journal_ledger_id,
                 rjqm.id as report_move_id,
                 aml.id as move_line_id,
                 aml.account_id as account_id,
@@ -300,7 +324,7 @@ class ReportJournalQweb(models.TransientModel):
             FROM
                 account_move_line aml
             INNER JOIN
-                report_journal_qweb_move rjqm
+                report_journal_ledger_move rjqm
                     on (rjqm.move_id = aml.move_id)
             LEFT JOIN
                 account_account aa
@@ -330,7 +354,7 @@ class ReportJournalQweb(models.TransientModel):
             SELECT
                 distinct(jrqjtl.tax_id)
             FROM
-                report_journal_qweb_journal_tax_line jrqjtl
+                report_journal_ledger_journal_tax_line jrqjtl
             WHERE
                 jrqjtl.report_id = %s
         """
@@ -339,7 +363,7 @@ class ReportJournalQweb(models.TransientModel):
         tax_ids = set([row[0] for row in rows])
 
         sql = """
-            INSERT INTO report_journal_qweb_report_tax_line (
+            INSERT INTO report_journal_ledger_report_tax_line (
                 create_uid,
                 create_date,
                 report_id,
@@ -360,30 +384,30 @@ class ReportJournalQweb(models.TransientModel):
                 at.description as tax_code,
                 (
                     SELECT sum(base_debit)
-                    FROM report_journal_qweb_journal_tax_line jrqjtl2
+                    FROM report_journal_ledger_journal_tax_line jrqjtl2
                     WHERE jrqjtl2.report_id = %s
                     AND jrqjtl2.tax_id = %s
                 ) as base_debit,
                 (
                     SELECT sum(base_credit)
-                    FROM report_journal_qweb_journal_tax_line jrqjtl2
+                    FROM report_journal_ledger_journal_tax_line jrqjtl2
                     WHERE jrqjtl2.report_id = %s
                     AND jrqjtl2.tax_id = %s
                 ) as base_credit,
                 (
                     SELECT sum(tax_debit)
-                    FROM report_journal_qweb_journal_tax_line jrqjtl2
+                    FROM report_journal_ledger_journal_tax_line jrqjtl2
                     WHERE jrqjtl2.report_id = %s
                     AND jrqjtl2.tax_id = %s
                 ) as tax_debit,
                 (
                     SELECT sum(tax_credit)
-                    FROM report_journal_qweb_journal_tax_line jrqjtl2
+                    FROM report_journal_ledger_journal_tax_line jrqjtl2
                     WHERE jrqjtl2.report_id = %s
                     AND jrqjtl2.tax_id = %s
                 ) as tax_credit
             FROM
-                report_journal_qweb_journal_tax_line jrqjtl
+                report_journal_ledger_journal_tax_line jrqjtl
             LEFT JOIN
                 account_tax at
                     on (at.id = jrqjtl.tax_id)
@@ -414,14 +438,22 @@ class ReportJournalQweb(models.TransientModel):
     @api.multi
     def _inject_journal_tax_values(self):
         self.ensure_one()
-
+        sql = """
+            DELETE
+            FROM report_journal_ledger_journal_tax_line
+            WHERE report_id = %s
+        """
+        params = (
+            self.id,
+        )
+        self.env.cr.execute(sql, params)
         sql_distinct_tax_id = """
             SELECT
                 distinct(jrqml.tax_id)
             FROM
-                report_journal_qweb_move_line jrqml
+                report_journal_ledger_move_line jrqml
             WHERE
-                jrqml.report_journal_id = %s
+                jrqml.report_journal_ledger_id = %s
         """
 
         tax_ids_by_journal_id = {}
@@ -435,11 +467,11 @@ class ReportJournalQweb(models.TransientModel):
             ])
 
         sql = """
-            INSERT INTO report_journal_qweb_journal_tax_line (
+            INSERT INTO report_journal_ledger_journal_tax_line (
                 create_uid,
                 create_date,
                 report_id,
-                report_journal_id,
+                report_journal_ledger_id,
                 tax_id,
                 tax_name,
                 tax_code,
@@ -452,14 +484,14 @@ class ReportJournalQweb(models.TransientModel):
                 %s as create_uid,
                 NOW() as create_date,
                 %s as report_id,
-                %s as report_journal_id,
+                %s as report_journal_ledger_id,
                 %s as tax_id,
                 at.name as tax_name,
                 at.description as tax_code,
                 (
                     SELECT sum(debit)
-                    FROM report_journal_qweb_move_line jrqml2
-                    WHERE jrqml2.report_journal_id = %s
+                    FROM report_journal_ledger_move_line jrqml2
+                    WHERE jrqml2.report_journal_ledger_id = %s
                     AND (
                         SELECT
                             count(*)
@@ -474,8 +506,8 @@ class ReportJournalQweb(models.TransientModel):
                 ) as base_debit,
                 (
                     SELECT sum(credit)
-                    FROM report_journal_qweb_move_line jrqml2
-                    WHERE jrqml2.report_journal_id = %s
+                    FROM report_journal_ledger_move_line jrqml2
+                    WHERE jrqml2.report_journal_ledger_id = %s
                     AND (
                         SELECT
                             count(*)
@@ -490,18 +522,18 @@ class ReportJournalQweb(models.TransientModel):
                 ) as base_credit,
                 (
                     SELECT sum(debit)
-                    FROM report_journal_qweb_move_line jrqml2
-                    WHERE jrqml2.report_journal_id = %s
+                    FROM report_journal_ledger_move_line jrqml2
+                    WHERE jrqml2.report_journal_ledger_id = %s
                     AND jrqml2.tax_id = %s
                 ) as tax_debit,
                 (
                     SELECT sum(credit)
-                    FROM report_journal_qweb_move_line jrqml2
-                    WHERE jrqml2.report_journal_id = %s
+                    FROM report_journal_ledger_move_line jrqml2
+                    WHERE jrqml2.report_journal_ledger_id = %s
                     AND jrqml2.tax_id = %s
                 ) as tax_credit
             FROM
-                report_journal_qweb_journal rjqj
+                report_journal_ledger_journal rjqj
             LEFT JOIN
                 account_tax at
                     on (at.id = %s)
@@ -509,24 +541,24 @@ class ReportJournalQweb(models.TransientModel):
                 rjqj.id = %s
         """
 
-        for report_journal_id in tax_ids_by_journal_id:
-            tax_ids = tax_ids_by_journal_id[report_journal_id]
+        for report_journal_ledger_id in tax_ids_by_journal_id:
+            tax_ids = tax_ids_by_journal_id[report_journal_ledger_id]
             for tax_id in tax_ids:
                 params = (
                     self.env.uid,
                     self.id,
-                    report_journal_id,
+                    report_journal_ledger_id,
                     tax_id,
-                    report_journal_id,
+                    report_journal_ledger_id,
                     tax_id,
-                    report_journal_id,
+                    report_journal_ledger_id,
                     tax_id,
-                    report_journal_id,
+                    report_journal_ledger_id,
                     tax_id,
-                    report_journal_id,
+                    report_journal_ledger_id,
                     tax_id,
                     tax_id,
-                    report_journal_id,
+                    report_journal_ledger_id,
                 )
                 self.env.cr.execute(sql, params)
 
@@ -535,17 +567,17 @@ class ReportJournalQweb(models.TransientModel):
         self.ensure_one()
         sql = """
             UPDATE
-                report_journal_qweb_journal rjqj
+                report_journal_ledger_journal rjqj
             SET
                 debit = (
                     SELECT sum(rjqml.debit)
-                    FROM report_journal_qweb_move_line rjqml
-                    WHERE rjqml.report_journal_id = rjqj.id
+                    FROM report_journal_ledger_move_line rjqml
+                    WHERE rjqml.report_journal_ledger_id = rjqj.id
                 ),
                 credit = (
                     SELECT sum(rjqml.credit)
-                    FROM report_journal_qweb_move_line rjqml
-                    WHERE rjqml.report_journal_id = rjqj.id
+                    FROM report_journal_ledger_move_line rjqml
+                    WHERE rjqml.report_journal_ledger_id = rjqj.id
                 )
             WHERE
                 rjqj.report_id = %s
@@ -553,29 +585,44 @@ class ReportJournalQweb(models.TransientModel):
         self.env.cr.execute(sql, (self.id,))
 
     @api.multi
-    def print_report(self, xlsx_report=False):
+    def print_report(self, report_type):
         self.ensure_one()
-        self.compute_data_for_report()
-        if xlsx_report:
-            report_name = 'account_financial_report_qweb.' \
-                          'report_journal_xlsx'
+        if report_type == 'xlsx':
+            report_name = 'a_f_r.report_journal_ledger_xlsx'
         else:
             report_name = 'account_financial_report_qweb.' \
-                          'report_journal_qweb'
-        return self.env['report'].get_action(
-            docids=self.ids, report_name=report_name)
+                          'report_journal_ledger_qweb'
+        return self.env['ir.actions.report'].search(
+            [('report_name', '=', report_name),
+             ('report_type', '=', report_type)], limit=1).report_action(self)
+
+    def _get_html(self):
+        result = {}
+        rcontext = {}
+        context = dict(self.env.context)
+        report = self.browse(context.get('active_id'))
+        if report:
+            rcontext['o'] = report
+            result['html'] = self.env.ref(
+                'account_financial_report_qweb.report_journal_ledger').render(
+                    rcontext)
+        return result
+
+    @api.model
+    def get_html(self, given_context=None):
+        return self._get_html()
 
 
-class ReportJournalQwebJournal(models.TransientModel):
+class ReportJournalLedgerJournal(models.TransientModel):
 
-    _name = 'report_journal_qweb_journal'
+    _name = 'report_journal_ledger_journal'
 
     name = fields.Char(
         required=True,
     )
     code = fields.Char()
     report_id = fields.Many2one(
-        comodel_name='report_journal_qweb',
+        comodel_name='report_journal_ledger',
         required=True,
         ondelete='cascade'
     )
@@ -585,12 +632,12 @@ class ReportJournalQwebJournal(models.TransientModel):
         ondelete='cascade',
     )
     report_move_ids = fields.One2many(
-        comodel_name='report_journal_qweb_move',
-        inverse_name='report_journal_id',
+        comodel_name='report_journal_ledger_move',
+        inverse_name='report_journal_ledger_id',
     )
     report_tax_line_ids = fields.One2many(
-        comodel_name='report_journal_qweb_journal_tax_line',
-        inverse_name='report_journal_id',
+        comodel_name='report_journal_ledger_journal_tax_line',
+        inverse_name='report_journal_ledger_id',
     )
     debit = fields.Float(
         digits=DIGITS,
@@ -608,17 +655,17 @@ class ReportJournalQwebJournal(models.TransientModel):
     )
 
 
-class ReportJournalQwebMove(models.TransientModel):
+class ReportJournalLedgerMove(models.TransientModel):
 
-    _name = 'report_journal_qweb_move'
+    _name = 'report_journal_ledger_move'
 
     report_id = fields.Many2one(
-        comodel_name='report_journal_qweb',
+        comodel_name='report_journal_ledger',
         required=True,
         ondelete='cascade'
     )
-    report_journal_id = fields.Many2one(
-        comodel_name='report_journal_qweb_journal',
+    report_journal_ledger_id = fields.Many2one(
+        comodel_name='report_journal_ledger_journal',
         required=True,
         ondelete='cascade',
     )
@@ -628,7 +675,7 @@ class ReportJournalQwebMove(models.TransientModel):
         ondelete='cascade',
     )
     report_move_line_ids = fields.One2many(
-        comodel_name='report_journal_qweb_move_line',
+        comodel_name='report_journal_ledger_move_line',
         inverse_name='report_move_id',
     )
     name = fields.Char()
@@ -639,23 +686,23 @@ class ReportJournalQwebMove(models.TransientModel):
     )
 
 
-class ReportJournalQwebMoveLine(models.TransientModel):
+class ReportJournalLedgerMoveLine(models.TransientModel):
 
-    _name = 'report_journal_qweb_move_line'
+    _name = 'report_journal_ledger_move_line'
     _order = 'partner_id desc, account_id desc'
 
     report_id = fields.Many2one(
-        comodel_name='report_journal_qweb',
+        comodel_name='report_journal_ledger',
         required=True,
         ondelete='cascade'
     )
-    report_journal_id = fields.Many2one(
-        comodel_name='report_journal_qweb_journal',
+    report_journal_ledger_id = fields.Many2one(
+        comodel_name='report_journal_ledger_journal',
         required=True,
         ondelete='cascade',
     )
     report_move_id = fields.Many2one(
-        comodel_name='report_journal_qweb_move',
+        comodel_name='report_journal_ledger_move',
         required=True,
         ondelete='cascade',
     )
@@ -704,13 +751,13 @@ class ReportJournalQwebMoveLine(models.TransientModel):
     )
 
 
-class ReportJournalQwebReportTaxLine(models.TransientModel):
+class ReportJournalLedgerReportTaxLine(models.TransientModel):
 
-    _name = 'report_journal_qweb_report_tax_line'
+    _name = 'report_journal_ledger_report_tax_line'
     _order = 'tax_code'
 
     report_id = fields.Many2one(
-        comodel_name='report_journal_qweb',
+        comodel_name='report_journal_ledger',
         required=True,
         ondelete='cascade'
     )
@@ -751,14 +798,14 @@ class ReportJournalQwebReportTaxLine(models.TransientModel):
             rec.tax_balance = rec.tax_debit - rec.tax_credit
 
 
-class ReportJournalQwebJournalTaxLine(models.TransientModel):
+class ReportJournalLedgerJournalTaxLine(models.TransientModel):
 
-    _name = 'report_journal_qweb_journal_tax_line'
-    _inherit = 'report_journal_qweb_report_tax_line'
+    _name = 'report_journal_ledger_journal_tax_line'
+    _inherit = 'report_journal_ledger_report_tax_line'
     _order = 'tax_code'
 
-    report_journal_id = fields.Many2one(
-        comodel_name='report_journal_qweb_journal',
+    report_journal_ledger_id = fields.Many2one(
+        comodel_name='report_journal_ledger_journal',
         required=True,
         ondelete='cascade',
     )

@@ -18,7 +18,7 @@ class AgedPartnerBalanceReport(models.TransientModel):
             If "show_move_line_details" is selected
     """
 
-    _name = 'report_aged_partner_balance_qweb'
+    _name = 'report_aged_partner_balance'
 
     # Filters fields, used for data computation
     date_at = fields.Date()
@@ -29,22 +29,21 @@ class AgedPartnerBalanceReport(models.TransientModel):
     show_move_line_details = fields.Boolean()
 
     # Open Items Report Data fields, used as base for compute the data reports
-    open_items_id = fields.Many2one(comodel_name='report_open_items_qweb')
+    open_items_id = fields.Many2one(comodel_name='report_open_items')
 
     # Data fields, used to browse report data
     account_ids = fields.One2many(
-        comodel_name='report_aged_partner_balance_qweb_account',
+        comodel_name='report_aged_partner_balance_account',
         inverse_name='report_id'
     )
 
 
 class AgedPartnerBalanceReportAccount(models.TransientModel):
-
-    _name = 'report_aged_partner_balance_qweb_account'
+    _name = 'report_aged_partner_balance_account'
     _order = 'code ASC'
 
     report_id = fields.Many2one(
-        comodel_name='report_aged_partner_balance_qweb',
+        comodel_name='report_aged_partner_balance',
         ondelete='cascade',
         index=True
     )
@@ -76,17 +75,16 @@ class AgedPartnerBalanceReportAccount(models.TransientModel):
 
     # Data fields, used to browse report data
     partner_ids = fields.One2many(
-        comodel_name='report_aged_partner_balance_qweb_partner',
+        comodel_name='report_aged_partner_balance_partner',
         inverse_name='report_account_id'
     )
 
 
 class AgedPartnerBalanceReportPartner(models.TransientModel):
-
-    _name = 'report_aged_partner_balance_qweb_partner'
+    _name = 'report_aged_partner_balance_partner'
 
     report_account_id = fields.Many2one(
-        comodel_name='report_aged_partner_balance_qweb_account',
+        comodel_name='report_aged_partner_balance_account',
         ondelete='cascade',
         index=True
     )
@@ -102,11 +100,11 @@ class AgedPartnerBalanceReportPartner(models.TransientModel):
 
     # Data fields, used to browse report data
     move_line_ids = fields.One2many(
-        comodel_name='report_aged_partner_balance_qweb_move_line',
+        comodel_name='report_aged_partner_balance_move_line',
         inverse_name='report_partner_id'
     )
     line_ids = fields.One2many(
-        comodel_name='report_aged_partner_balance_qweb_line',
+        comodel_name='report_aged_partner_balance_line',
         inverse_name='report_partner_id'
     )
 
@@ -117,20 +115,19 @@ class AgedPartnerBalanceReportPartner(models.TransientModel):
 ORDER BY
     CASE
         WHEN
-            "report_aged_partner_balance_qweb_partner"."partner_id" IS NOT NULL
+            "report_aged_partner_balance_partner"."partner_id" IS NOT NULL
         THEN 0
         ELSE 1
     END,
-    "report_aged_partner_balance_qweb_partner"."name"
+    "report_aged_partner_balance_partner"."name"
         """
 
 
 class AgedPartnerBalanceReportLine(models.TransientModel):
-
-    _name = 'report_aged_partner_balance_qweb_line'
+    _name = 'report_aged_partner_balance_line'
 
     report_partner_id = fields.Many2one(
-        comodel_name='report_aged_partner_balance_qweb_partner',
+        comodel_name='report_aged_partner_balance_partner',
         ondelete='cascade',
         index=True
     )
@@ -147,11 +144,10 @@ class AgedPartnerBalanceReportLine(models.TransientModel):
 
 
 class AgedPartnerBalanceReportMoveLine(models.TransientModel):
-
-    _name = 'report_aged_partner_balance_qweb_move_line'
+    _name = 'report_aged_partner_balance_move_line'
 
     report_partner_id = fields.Many2one(
-        comodel_name='report_aged_partner_balance_qweb_partner',
+        comodel_name='report_aged_partner_balance_partner',
         ondelete='cascade',
         index=True
     )
@@ -182,7 +178,7 @@ class AgedPartnerBalanceReportCompute(models.TransientModel):
     For class fields, go more top at this file.
     """
 
-    _inherit = 'report_aged_partner_balance_qweb'
+    _inherit = 'report_aged_partner_balance'
 
     @api.multi
     def print_report(self, xlsx_report=False):
@@ -213,7 +209,7 @@ class AgedPartnerBalanceReportCompute(models.TransientModel):
         # Compute Open Items Report Data.
         # The data of Aged Partner Balance Report
         # are based on Open Items Report data.
-        model = self.env['report_open_items_qweb']
+        model = self.env['report_open_items']
         self.open_items_id = model.create(self._prepare_report_open_items())
         self.open_items_id.compute_data_for_report()
 
@@ -230,10 +226,10 @@ class AgedPartnerBalanceReportCompute(models.TransientModel):
         self.invalidate_cache()
 
     def _inject_account_values(self):
-        """Inject report values for report_aged_partner_balance_qweb_account"""
+        """Inject report values for report_aged_partner_balance_account"""
         query_inject_account = """
 INSERT INTO
-    report_aged_partner_balance_qweb_account
+    report_aged_partner_balance_account
     (
     report_id,
     create_uid,
@@ -250,7 +246,7 @@ SELECT
     rao.code,
     rao.name
 FROM
-    report_open_items_qweb_account rao
+    report_open_items_account rao
 WHERE
     rao.report_id = %s
         """
@@ -262,10 +258,10 @@ WHERE
         self.env.cr.execute(query_inject_account, query_inject_account_params)
 
     def _inject_partner_values(self):
-        """Inject report values for report_aged_partner_balance_qweb_partner"""
+        """Inject report values for report_aged_partner_balance_partner"""
         query_inject_partner = """
 INSERT INTO
-    report_aged_partner_balance_qweb_partner
+    report_aged_partner_balance_partner
     (
     report_account_id,
     create_uid,
@@ -280,11 +276,11 @@ SELECT
     rpo.partner_id,
     rpo.name
 FROM
-    report_open_items_qweb_partner rpo
+    report_open_items_partner rpo
 INNER JOIN
-    report_open_items_qweb_account rao ON rpo.report_account_id = rao.id
+    report_open_items_account rao ON rpo.report_account_id = rao.id
 INNER JOIN
-    report_aged_partner_balance_qweb_account ra ON rao.code = ra.code
+    report_aged_partner_balance_account ra ON rao.code = ra.code
 WHERE
     rao.report_id = %s
 AND ra.report_id = %s
@@ -297,7 +293,7 @@ AND ra.report_id = %s
         self.env.cr.execute(query_inject_partner, query_inject_partner_params)
 
     def _inject_line_values(self, only_empty_partner_line=False):
-        """ Inject report values for report_aged_partner_balance_qweb_line.
+        """ Inject report values for report_aged_partner_balance_line.
 
         The "only_empty_partner_line" value is used
         to compute data without partner.
@@ -314,7 +310,7 @@ WITH
                 DATE %s - INTEGER '120' AS date_less_120_days
         )
 INSERT INTO
-    report_aged_partner_balance_qweb_line
+    report_aged_partner_balance_line
     (
         report_partner_id,
         create_uid,
@@ -380,15 +376,15 @@ SELECT
     ) AS older
 FROM
     date_range,
-    report_open_items_qweb_move_line rlo
+    report_open_items_move_line rlo
 INNER JOIN
-    report_open_items_qweb_partner rpo ON rlo.report_partner_id = rpo.id
+    report_open_items_partner rpo ON rlo.report_partner_id = rpo.id
 INNER JOIN
-    report_open_items_qweb_account rao ON rpo.report_account_id = rao.id
+    report_open_items_account rao ON rpo.report_account_id = rao.id
 INNER JOIN
-    report_aged_partner_balance_qweb_account ra ON rao.code = ra.code
+    report_aged_partner_balance_account ra ON rao.code = ra.code
 INNER JOIN
-    report_aged_partner_balance_qweb_partner rp
+    report_aged_partner_balance_partner rp
         ON
             ra.id = rp.report_account_id
         """
@@ -417,7 +413,7 @@ GROUP BY
         self.env.cr.execute(query_inject_line, query_inject_line_params)
 
     def _inject_move_line_values(self, only_empty_partner_line=False):
-        """ Inject report values for report_aged_partner_balance_qweb_move_line
+        """ Inject report values for report_aged_partner_balance_move_line
 
         The "only_empty_partner_line" value is used
         to compute data without partner.
@@ -434,7 +430,7 @@ WITH
                 DATE %s - INTEGER '120' AS date_less_120_days
         )
 INSERT INTO
-    report_aged_partner_balance_qweb_move_line
+    report_aged_partner_balance_move_line
     (
         report_partner_id,
         create_uid,
@@ -502,15 +498,15 @@ SELECT
     END AS older
 FROM
     date_range,
-    report_open_items_qweb_move_line rlo
+    report_open_items_move_line rlo
 INNER JOIN
-    report_open_items_qweb_partner rpo ON rlo.report_partner_id = rpo.id
+    report_open_items_partner rpo ON rlo.report_partner_id = rpo.id
 INNER JOIN
-    report_open_items_qweb_account rao ON rpo.report_account_id = rao.id
+    report_open_items_account rao ON rpo.report_account_id = rao.id
 INNER JOIN
-    report_aged_partner_balance_qweb_account ra ON rao.code = ra.code
+    report_aged_partner_balance_account ra ON rao.code = ra.code
 INNER JOIN
-    report_aged_partner_balance_qweb_partner rp
+    report_aged_partner_balance_partner rp
         ON
             ra.id = rp.report_account_id
         """
@@ -539,7 +535,7 @@ AND ra.report_id = %s
 
     def _compute_accounts_cumul(self):
         """ Compute cumulative amount for
-        report_aged_partner_balance_qweb_account.
+        report_aged_partner_balance_account.
         """
         query_compute_accounts_cumul = """
 WITH
@@ -555,12 +551,12 @@ WITH
                 SUM(rl.age_120_days) AS cumul_age_120_days,
                 SUM(rl.older) AS cumul_older
             FROM
-                report_aged_partner_balance_qweb_line rl
+                report_aged_partner_balance_line rl
             INNER JOIN
-                report_aged_partner_balance_qweb_partner rp
+                report_aged_partner_balance_partner rp
                     ON rl.report_partner_id = rp.id
             INNER JOIN
-                report_aged_partner_balance_qweb_account ra
+                report_aged_partner_balance_account ra
                     ON rp.report_account_id = ra.id
             WHERE
                 ra.report_id = %s
@@ -568,7 +564,7 @@ WITH
                 ra.id
         )
 UPDATE
-    report_aged_partner_balance_qweb_account
+    report_aged_partner_balance_account
 SET
     cumul_amount_residual = c.cumul_amount_residual,
     cumul_current = c.cumul_current,

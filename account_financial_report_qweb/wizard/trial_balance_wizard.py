@@ -5,6 +5,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import models, fields, api
+from odoo.tools.safe_eval import safe_eval
 
 
 class TrialBalanceReportWizard(models.TransientModel):
@@ -116,6 +117,22 @@ class TrialBalanceReportWizard(models.TransientModel):
             self.hide_account_balance_at_0 = False
 
     @api.multi
+    def button_export_html(self):
+        self.ensure_one()
+        action = self.env.ref(
+            'account_financial_report_qweb.action_report_trial_balance')
+        vals = action.read()[0]
+        context1 = vals.get('context', {})
+        model = self.env['report_trial_balance']
+        report = model.create(self._prepare_report_trial_balance())
+        report.compute_data_for_report()
+
+        context1['active_id'] = report.id
+        context1['active_ids'] = report.ids
+        vals['context'] = context1
+        return vals
+
+    @api.multi
     def button_export_pdf(self):
         self.ensure_one()
         return self._export()
@@ -143,6 +160,6 @@ class TrialBalanceReportWizard(models.TransientModel):
 
     def _export(self, xlsx_report=False):
         """Default export is PDF."""
-        model = self.env['report_trial_balance_qweb']
+        model = self.env['report_trial_balance']
         report = model.create(self._prepare_report_trial_balance())
         return report.print_report(xlsx_report)

@@ -16,7 +16,7 @@ class OpenItemsReport(models.TransientModel):
     **** OpenItemsReportMoveLine
     """
 
-    _name = 'report_open_items_qweb'
+    _name = 'report_open_items'
 
     # Filters fields, used for data computation
     date_at = fields.Date()
@@ -29,18 +29,18 @@ class OpenItemsReport(models.TransientModel):
 
     # Data fields, used to browse report data
     account_ids = fields.One2many(
-        comodel_name='report_open_items_qweb_account',
+        comodel_name='report_open_items_account',
         inverse_name='report_id'
     )
 
 
 class OpenItemsReportAccount(models.TransientModel):
 
-    _name = 'report_open_items_qweb_account'
+    _name = 'report_open_items_account'
     _order = 'code ASC'
 
     report_id = fields.Many2one(
-        comodel_name='report_open_items_qweb',
+        comodel_name='report_open_items',
         ondelete='cascade',
         index=True
     )
@@ -62,17 +62,17 @@ class OpenItemsReportAccount(models.TransientModel):
 
     # Data fields, used to browse report data
     partner_ids = fields.One2many(
-        comodel_name='report_open_items_qweb_partner',
+        comodel_name='report_open_items_partner',
         inverse_name='report_account_id'
     )
 
 
 class OpenItemsReportPartner(models.TransientModel):
 
-    _name = 'report_open_items_qweb_partner'
+    _name = 'report_open_items_partner'
 
     report_account_id = fields.Many2one(
-        comodel_name='report_open_items_qweb_account',
+        comodel_name='report_open_items_account',
         ondelete='cascade',
         index=True
     )
@@ -93,7 +93,7 @@ class OpenItemsReportPartner(models.TransientModel):
 
     # Data fields, used to browse report data
     move_line_ids = fields.One2many(
-        comodel_name='report_open_items_qweb_move_line',
+        comodel_name='report_open_items_move_line',
         inverse_name='report_partner_id'
     )
 
@@ -103,20 +103,20 @@ class OpenItemsReportPartner(models.TransientModel):
         return """
 ORDER BY
     CASE
-        WHEN "report_open_items_qweb_partner"."partner_id" IS NOT NULL
+        WHEN "report_open_items_partner"."partner_id" IS NOT NULL
         THEN 0
         ELSE 1
     END,
-    "report_open_items_qweb_partner"."name"
+    "report_open_items_partner"."name"
         """
 
 
 class OpenItemsReportMoveLine(models.TransientModel):
 
-    _name = 'report_open_items_qweb_move_line'
+    _name = 'report_open_items_move_line'
 
     report_partner_id = fields.Many2one(
-        comodel_name='report_open_items_qweb_partner',
+        comodel_name='report_open_items_partner',
         ondelete='cascade',
         index=True
     )
@@ -144,7 +144,7 @@ class OpenItemsReportCompute(models.TransientModel):
     For class fields, go more top at this file.
     """
 
-    _inherit = 'report_open_items_qweb'
+    _inherit = 'report_open_items'
 
     @api.multi
     def print_report(self, xlsx_report=False):
@@ -177,7 +177,7 @@ class OpenItemsReportCompute(models.TransientModel):
         self.invalidate_cache()
 
     def _inject_account_values(self):
-        """Inject report values for report_open_items_qweb_account."""
+        """Inject report values for report_open_items_account."""
         query_inject_account = """
 WITH
     accounts AS
@@ -225,7 +225,7 @@ WITH
                 a.id, c.id
         )
 INSERT INTO
-    report_open_items_qweb_account
+    report_open_items_account
     (
     report_id,
     create_uid,
@@ -265,7 +265,7 @@ FROM
         self.env.cr.execute(query_inject_account, query_inject_account_params)
 
     def _inject_partner_values(self):
-        """ Inject report values for report_open_items_qweb_partner. """
+        """ Inject report values for report_open_items_partner. """
         # pylint: disable=sql-injection
         query_inject_partner = """
 WITH
@@ -287,7 +287,7 @@ WITH
                     '""" + _('No partner allocated') + """'
                 ) AS partner_name
             FROM
-                report_open_items_qweb_account ra
+                report_open_items_account ra
             INNER JOIN
                 account_account a ON ra.account_id = a.id
             INNER JOIN
@@ -319,7 +319,7 @@ WITH
                 at.include_initial_balance
         )
 INSERT INTO
-    report_open_items_qweb_partner
+    report_open_items_partner
     (
     report_account_id,
     create_uid,
@@ -374,9 +374,9 @@ FROM
                 ) AS partial_amount_currency,
                 ml.currency_id
             FROM
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
             INNER JOIN
-                report_open_items_qweb_account ra
+                report_open_items_account ra
                     ON rp.report_account_id = ra.id
             INNER JOIN
                 account_move_line ml
@@ -434,7 +434,7 @@ FROM
         return sub_query
 
     def _inject_line_values(self, only_empty_partner_line=False):
-        """ Inject report values for report_open_items_qweb_move_line.
+        """ Inject report values for report_open_items_move_line.
 
         The "only_empty_partner_line" value is used
         to compute data without partner.
@@ -491,7 +491,7 @@ WITH
                 currency_id
         )
 INSERT INTO
-    report_open_items_qweb_move_line
+    report_open_items_move_line
     (
     report_partner_id,
     create_uid,
@@ -543,9 +543,9 @@ SELECT
     ml.amount_currency,
     ml2.amount_residual_currency
 FROM
-    report_open_items_qweb_partner rp
+    report_open_items_partner rp
 INNER JOIN
-    report_open_items_qweb_account ra ON rp.report_account_id = ra.id
+    report_open_items_account ra ON rp.report_account_id = ra.id
 INNER JOIN
     account_move_line ml ON ra.account_id = ml.account_id
 INNER JOIN
@@ -613,7 +613,7 @@ ORDER BY
 
     def _compute_partners_and_accounts_cumul(self):
         """ Compute cumulative amount for
-        report_open_items_qweb_partner and report_open_items_qweb_account.
+        report_open_items_partner and report_open_items_account.
         """
         self._compute_partner_cumul()
         self._compute_account_cumul()
@@ -626,25 +626,25 @@ WHERE
             SELECT
                 rp.id
             FROM
-                report_open_items_qweb_account ra
+                report_open_items_account ra
             INNER JOIN
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
                     ON ra.id = rp.report_account_id
             WHERE
                 ra.report_id = %s
         )"""
         query_computer_partner_residual_cumul = """
 UPDATE
-    report_open_items_qweb_partner
+    report_open_items_partner
 SET
     final_amount_residual =
         (
             SELECT
                 SUM(rml.amount_residual) AS final_amount_residual
             FROM
-                report_open_items_qweb_move_line rml
+                report_open_items_move_line rml
             WHERE
-                rml.report_partner_id = report_open_items_qweb_partner.id
+                rml.report_partner_id = report_open_items_partner.id
         )
 """ + where_condition_partner_by_account
         params_compute_partners_residual_cumul = (self.id,)
@@ -653,16 +653,16 @@ SET
 
         query_compute_partners_due_cumul = """
 UPDATE
-    report_open_items_qweb_partner
+    report_open_items_partner
 SET
     final_amount_total_due =
         (
             SELECT
                 SUM(rml.amount_total_due) AS final_amount_total_due
             FROM
-                report_open_items_qweb_move_line rml
+                report_open_items_move_line rml
             WHERE
-                rml.report_partner_id = report_open_items_qweb_partner.id
+                rml.report_partner_id = report_open_items_partner.id
         )
 """ + where_condition_partner_by_account
         params_compute_partner_due_cumul = (self.id,)
@@ -677,9 +677,9 @@ WHERE
             SELECT
                 rp.id
             FROM
-                report_open_items_qweb_account ra
+                report_open_items_account ra
             INNER JOIN
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
                     ON ra.id = rp.report_account_id
             WHERE
                 ra.report_id = %s AND ra.currency_id IS NOT NULL
@@ -687,16 +687,16 @@ WHERE
         """
         query_compute_partners_cur_id_cumul = """
 UPDATE
-    report_open_items_qweb_partner
+    report_open_items_partner
 SET
     currency_id =
         (
             SELECT
                 MAX(currency_id) as currency_id
             FROM
-                report_open_items_qweb_move_line rml
+                report_open_items_move_line rml
             WHERE
-                rml.report_partner_id = report_open_items_qweb_partner.id
+                rml.report_partner_id = report_open_items_partner.id
         )
 """ + where_condition_partner_by_account_cur
         params_compute_partners_cur_id_cumul = (self.id,)
@@ -705,7 +705,7 @@ SET
 
         query_compute_partners_cur_residual_cumul = """
 UPDATE
-    report_open_items_qweb_partner
+    report_open_items_partner
 SET
     final_amount_residual_currency =
         (
@@ -713,9 +713,9 @@ SET
                 SUM(rml.amount_residual_currency)
                     AS final_amount_residual_currency
             FROM
-                report_open_items_qweb_move_line rml
+                report_open_items_move_line rml
             WHERE
-                rml.report_partner_id = report_open_items_qweb_partner.id
+                rml.report_partner_id = report_open_items_partner.id
         )
 """ + where_condition_partner_by_account_cur
         params_compute_partners_cur_residual_cumul = (self.id,)
@@ -724,17 +724,17 @@ SET
 
         query_compute_partners_cur_due_cumul = """
 UPDATE
-    report_open_items_qweb_partner
+    report_open_items_partner
 SET
     final_amount_total_due_currency =
         (
             SELECT
                 SUM(rml.amount_total_due_currency)
-                    AS final_amount_total_due_currency
+                    AS  final_amount_total_due_currency
             FROM
-                report_open_items_qweb_move_line rml
+                report_open_items_move_line rml
             WHERE
-                rml.report_partner_id = report_open_items_qweb_partner.id
+                rml.report_partner_id = report_open_items_partner.id
         )
 """ + where_condition_partner_by_account_cur
         params_compute_partners_cur_due_cumul = (self.id,)
@@ -744,16 +744,16 @@ SET
     def _compute_account_cumul(self):
         query_compute_accounts_residual_cumul = """
 UPDATE
-    report_open_items_qweb_account
+    report_open_items_account
 SET
     final_amount_residual =
         (
             SELECT
                 SUM(rp.final_amount_residual) AS final_amount_residual
             FROM
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
             WHERE
-                rp.report_account_id = report_open_items_qweb_account.id
+                rp.report_account_id = report_open_items_account.id
         )
 WHERE
     report_id  = %s
@@ -764,7 +764,7 @@ WHERE
 
         query_compute_accounts_cur_residual_cumul = """
 UPDATE
-    report_open_items_qweb_account
+    report_open_items_account
 SET
     final_amount_residual_currency =
         (
@@ -772,12 +772,12 @@ SET
                 SUM(rp.final_amount_residual_currency)
                     AS final_amount_residual_currency
             FROM
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
             WHERE
-                rp.report_account_id = report_open_items_qweb_account.id
+                rp.report_account_id = report_open_items_account.id
         )
 WHERE
-    report_id  = %s
+    report_id = %s
         """
         params_compute_accounts_cur_residual_cumul = (self.id,)
         self.env.cr.execute(query_compute_accounts_cur_residual_cumul,
@@ -785,19 +785,19 @@ WHERE
 
         query_compute_accounts_due_cumul = """
 UPDATE
-    report_open_items_qweb_account
+    report_open_items_account
 SET
     final_amount_total_due =
         (
             SELECT
                 SUM(rp.final_amount_total_due) AS final_amount_total_due
             FROM
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
             WHERE
-                rp.report_account_id = report_open_items_qweb_account.id
+                rp.report_account_id = report_open_items_account.id
         )
 WHERE
-    report_id  = %s
+    report_id = %s
         """
         params_compute_accounts_due_cumul = (self.id,)
         self.env.cr.execute(query_compute_accounts_due_cumul,
@@ -805,7 +805,7 @@ WHERE
 
         query_compute_accounts_cur_due_cumul = """
 UPDATE
-    report_open_items_qweb_account
+    report_open_items_account
 SET
     final_amount_total_due_currency =
         (
@@ -813,12 +813,12 @@ SET
                 SUM(rp.final_amount_total_due_currency)
                     AS final_amount_total_due_currency
             FROM
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
             WHERE
-                rp.report_account_id = report_open_items_qweb_account.id
+                rp.report_account_id = report_open_items_account.id
         )
 WHERE
-    report_id  = %s
+    report_id = %s
         """
         params_compute_accounts_cur_due_cumul = (self.id,)
         self.env.cr.execute(query_compute_accounts_cur_due_cumul,
@@ -827,26 +827,26 @@ WHERE
     def _clean_partners_and_accounts(self,
                                      only_delete_account_balance_at_0=False):
         """ Delete empty data for
-        report_open_items_qweb_partner and report_open_items_qweb_account.
+        report_open_items_partner and report_open_items_account.
 
         The "only_delete_account_balance_at_0" value is used
         to delete also the data with cumulative amounts at 0.
         """
         query_clean_partners = """
 DELETE FROM
-    report_open_items_qweb_partner
+    report_open_items_partner
 WHERE
     id IN
         (
             SELECT
                 DISTINCT rp.id
             FROM
-                report_open_items_qweb_account ra
+                report_open_items_account ra
             INNER JOIN
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
                     ON ra.id = rp.report_account_id
             LEFT JOIN
-                report_open_items_qweb_move_line rml
+                report_open_items_move_line rml
                     ON rp.id = rml.report_partner_id
             WHERE
                 ra.report_id = %s
@@ -869,16 +869,16 @@ WHERE
         self.env.cr.execute(query_clean_partners, params_clean_partners)
         query_clean_accounts = """
 DELETE FROM
-    report_open_items_qweb_account
+    report_open_items_account
 WHERE
     id IN
         (
             SELECT
                 DISTINCT ra.id
             FROM
-                report_open_items_qweb_account ra
+                report_open_items_account ra
             LEFT JOIN
-                report_open_items_qweb_partner rp
+                report_open_items_partner rp
                     ON ra.id = rp.report_account_id
             WHERE
                 ra.report_id = %s

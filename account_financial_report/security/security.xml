@@ -14,7 +14,7 @@
             <field name="perm_unlink" eval="True"/>
             <field eval="False" name="global"/>
             <field name="domain_force">[('company_id','=',user.company_id.id)]</field>
-            <field name="groups" eval="[(4,ref('account_financial_report.group_afreport'))]"/>
+            <field name="groups" eval="[(4,ref('account_financial_report_qweb.group_afreport'))]"/>
         </record>
     </data>
 </openerp>

@@ -76,19 +76,20 @@ class JournalXslx(abstract_report_xlsx.AbstractReportXslx):
             }
         ]
 
-        if report.with_currency:
+        if report.foreign_currency:
             columns += [
+                {
+                    'header': _('Currency'),
+                    'field': 'currency_id',
+                    'type': 'many2one',
+                    'width': 14
+                },
                 {
                     'header': _('Amount Currency'),
                     'field': 'amount_currency',
                     'type': 'amount',
-                    'width': 14
+                    'width': 18
                 },
-                {
-                    'header': _('Currency'),
-                    'field': 'currency_name',
-                    'width': 14
-                }
             ]
 
         columns_as_dict = {}
@@ -156,13 +157,13 @@ class JournalXslx(abstract_report_xlsx.AbstractReportXslx):
         target_label_by_value = {
             value: label
             for value, label in
-            self.env['journal.report.wizard']._get_move_targets()
+            self.env['journal.ledger.report.wizard']._get_move_targets()
         }
 
         sort_option_label_by_value = {
             value: label
             for value, label in
-            self.env['journal.report.wizard']._get_sort_options()
+            self.env['journal.ledger.report.wizard']._get_sort_options()
         }
 
         return [
@@ -186,7 +187,7 @@ class JournalXslx(abstract_report_xlsx.AbstractReportXslx):
                 _('Journals'),
                 ', '.join([
                     "%s - %s" % (report_journal.code, report_journal.name)
-                    for report_journal in report.report_journal_ids
+                    for report_journal in report.report_journal_ledger_ids
                 ])
 
             ]
@@ -195,7 +196,7 @@ class JournalXslx(abstract_report_xlsx.AbstractReportXslx):
     def _generate_report_content(self, workbook, report):
         group_option = report.group_option
         if group_option == 'journal':
-            for report_journal in report.report_journal_ids:
+            for report_journal in report.report_journal_ledger_ids:
                 self._generate_journal_content(workbook, report_journal)
         elif group_option == 'none':
             self._generate_no_group_content(workbook, report)

@@ -16,7 +16,7 @@ class TrialBalanceReport(models.TransientModel):
             If "show_partner_details" is selected
     """
 
-    _name = 'report_trial_balance_qweb'
+    _name = 'report_trial_balance'
 
     # Filters fields, used for data computation
     date_from = fields.Date()
@@ -33,23 +33,22 @@ class TrialBalanceReport(models.TransientModel):
     # General Ledger Report Data fields,
     # used as base for compute the data reports
     general_ledger_id = fields.Many2one(
-        comodel_name='report_general_ledger_qweb'
+        comodel_name='report_general_ledger'
     )
 
     # Data fields, used to browse report data
     account_ids = fields.One2many(
-        comodel_name='report_trial_balance_qweb_account',
+        comodel_name='report_trial_balance_account',
         inverse_name='report_id'
     )
 
 
 class TrialBalanceReportAccount(models.TransientModel):
-
-    _name = 'report_trial_balance_qweb_account'
-    _order = 'code ASC'
+    _name = 'report_trial_balance_account'
+    _order = 'sequence, code ASC, name'
 
     report_id = fields.Many2one(
-        comodel_name='report_trial_balance_qweb',
+        comodel_name='report_trial_balance',
         ondelete='cascade',
         index=True
     )
@@ -78,17 +77,16 @@ class TrialBalanceReportAccount(models.TransientModel):
 
     # Data fields, used to browse report data
     partner_ids = fields.One2many(
-        comodel_name='report_trial_balance_qweb_partner',
+        comodel_name='report_trial_balance_partner',
         inverse_name='report_account_id'
     )
 
 
 class TrialBalanceReportPartner(models.TransientModel):
-
-    _name = 'report_trial_balance_qweb_partner'
+    _name = 'report_trial_balance_partner'
 
     report_account_id = fields.Many2one(
-        comodel_name='report_trial_balance_qweb_account',
+        comodel_name='report_trial_balance_account',
         ondelete='cascade',
         index=True
     )
@@ -116,11 +114,11 @@ class TrialBalanceReportPartner(models.TransientModel):
         return """
 ORDER BY
     CASE
-        WHEN "report_trial_balance_qweb_partner"."partner_id" IS NOT NULL
+        WHEN "report_trial_balance_partner"."partner_id" IS NOT NULL
         THEN 0
         ELSE 1
     END,
-    "report_trial_balance_qweb_partner"."name"
+    "report_trial_balance_partner"."name"
         """
 
 
@@ -129,7 +127,7 @@ class TrialBalanceReportCompute(models.TransientModel):
     For class fields, go more top at this file.
     """
 
-    _inherit = 'report_trial_balance_qweb'
+    _inherit = 'report_trial_balance'
 
     @api.multi
     def print_report(self, xlsx_report=False):
@@ -164,7 +162,7 @@ class TrialBalanceReportCompute(models.TransientModel):
         # Compute General Ledger Report Data.
         # The data of Trial Balance Report
         # are based on General Ledger Report data.
-        model = self.env['report_general_ledger_qweb']
+        model = self.env['report_general_ledger']
         if self.filter_account_ids:
             account_ids = self.filter_account_ids
         else:
@@ -185,10 +183,10 @@ class TrialBalanceReportCompute(models.TransientModel):
         self.invalidate_cache()
 
     def _inject_account_values(self, account_ids):
-        """Inject report values for report_trial_balance_qweb_account"""
+        """Inject report values for report_trial_balance_account"""
         query_inject_account = """
 INSERT INTO
-    report_trial_balance_qweb_account
+    report_trial_balance_account
     (
     report_id,
     create_uid,
@@ -222,7 +220,7 @@ SELECT
         AS final_balance_foreign_currency
 FROM
     account_account acc
-    LEFT OUTER JOIN report_general_ledger_qweb_account AS rag
+    LEFT OUTER JOIN report_general_ledger_account AS rag
         ON rag.account_id = acc.id AND rag.report_id = %s
 WHERE
     acc.id in %s
@@ -239,10 +237,10 @@ WHERE
         self.env.cr.execute(query_inject_account, query_inject_account_params)
 
     def _inject_partner_values(self):
-        """Inject report values for report_trial_balance_qweb_partner"""
+        """Inject report values for report_trial_balance_partner"""
         query_inject_partner = """
 INSERT INTO
-    report_trial_balance_qweb_partner
+    report_trial_balance_partner
     (
     report_account_id,
     create_uid,
@@ -269,11 +267,11 @@ SELECT
     rpg.final_balance AS final_balance,
     rpg.final_balance_foreign_currency AS final_balance_foreign_currency
 FROM
-    report_general_ledger_qweb_partner rpg
+    report_general_ledger_partner rpg
 INNER JOIN
-    report_general_ledger_qweb_account rag ON rpg.report_account_id = rag.id
+    report_general_ledger_account rag ON rpg.report_account_id = rag.id
 INNER JOIN
-    report_trial_balance_qweb_account ra ON rag.code = ra.code
+    report_trial_balance_account ra ON rag.code = ra.code
 WHERE
     rag.report_id = %s
 AND ra.report_id = %s

@@ -6,6 +6,7 @@
 
 from datetime import datetime
 from odoo import models, fields, api
+from odoo.tools.safe_eval import safe_eval
 
 
 class OpenItemsReportWizard(models.TransientModel):
@@ -67,6 +68,21 @@ class OpenItemsReportWizard(models.TransientModel):
             self.account_ids = None
 
     @api.multi
+    def button_export_html(self):
+        self.ensure_one()
+        action = self.env.ref(
+            'account_financial_report_qweb.action_report_open_items_qweb')
+        vals = action.read()[0]
+        context1 = vals.get('context', {})
+        model = self.env['report_open_items']
+        report = model.create(self._prepare_report_open_items())
+        report.compute_data_for_report()
+        context1['active_id'] = report.id
+        context1['active_ids'] = report.ids
+        vals['context'] = context1
+        return vals
+
+    @api.multi
     def button_export_pdf(self):
         self.ensure_one()
         return self._export()
@@ -90,6 +106,6 @@ class OpenItemsReportWizard(models.TransientModel):
 
     def _export(self, xlsx_report=False):
         """Default export is PDF."""
-        model = self.env['report_open_items_qweb']
+        model = self.env['report_open_items']
         report = model.create(self._prepare_report_open_items())
         return report.print_report(xlsx_report)

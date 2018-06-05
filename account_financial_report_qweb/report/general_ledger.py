@@ -21,7 +21,7 @@ class GeneralLedgerReport(models.TransientModel):
             For receivable/payable and not centralized accounts
     """
 
-    _name = 'report_general_ledger_qweb'
+    _name = 'report_general_ledger'
 
     # Filters fields, used for data computation
     date_from = fields.Date()
@@ -47,7 +47,7 @@ class GeneralLedgerReport(models.TransientModel):
 
     # Data fields, used to browse report data
     account_ids = fields.One2many(
-        comodel_name='report_general_ledger_qweb_account',
+        comodel_name='report_general_ledger_account',
         inverse_name='report_id'
     )
 
@@ -70,11 +70,11 @@ class GeneralLedgerReport(models.TransientModel):
 
 class GeneralLedgerReportAccount(models.TransientModel):
 
-    _name = 'report_general_ledger_qweb_account'
+    _name = 'report_general_ledger_account'
     _order = 'code ASC'
 
     report_id = fields.Many2one(
-        comodel_name='report_general_ledger_qweb',
+        comodel_name='report_general_ledger',
         ondelete='cascade',
         index=True
     )
@@ -103,21 +103,21 @@ class GeneralLedgerReportAccount(models.TransientModel):
 
     # Data fields, used to browse report data
     move_line_ids = fields.One2many(
-        comodel_name='report_general_ledger_qweb_move_line',
+        comodel_name='report_general_ledger_move_line',
         inverse_name='report_account_id'
     )
     partner_ids = fields.One2many(
-        comodel_name='report_general_ledger_qweb_partner',
+        comodel_name='report_general_ledger_partner',
         inverse_name='report_account_id'
     )
 
 
 class GeneralLedgerReportPartner(models.TransientModel):
 
-    _name = 'report_general_ledger_qweb_partner'
+    _name = 'report_general_ledger_partner'
 
     report_account_id = fields.Many2one(
-        comodel_name='report_general_ledger_qweb_account',
+        comodel_name='report_general_ledger_account',
         ondelete='cascade',
         index=True
     )
@@ -142,7 +142,7 @@ class GeneralLedgerReportPartner(models.TransientModel):
 
     # Data fields, used to browse report data
     move_line_ids = fields.One2many(
-        comodel_name='report_general_ledger_qweb_move_line',
+        comodel_name='report_general_ledger_move_line',
         inverse_name='report_partner_id'
     )
 
@@ -152,25 +152,25 @@ class GeneralLedgerReportPartner(models.TransientModel):
         return """
 ORDER BY
     CASE
-        WHEN "report_general_ledger_qweb_partner"."partner_id" IS NOT NULL
+        WHEN "report_general_ledger_partner"."partner_id" IS NOT NULL
         THEN 0
         ELSE 1
     END,
-    "report_general_ledger_qweb_partner"."name"
+    "report_general_ledger_partner"."name"
         """
 
 
 class GeneralLedgerReportMoveLine(models.TransientModel):
 
-    _name = 'report_general_ledger_qweb_move_line'
+    _name = 'report_general_ledger_move_line'
 
     report_account_id = fields.Many2one(
-        comodel_name='report_general_ledger_qweb_account',
+        comodel_name='report_general_ledger_account',
         ondelete='cascade',
         index=True
     )
     report_partner_id = fields.Many2one(
-        comodel_name='report_general_ledger_qweb_partner',
+        comodel_name='report_general_ledger_partner',
         ondelete='cascade',
         index=True
     )
@@ -200,7 +200,7 @@ class GeneralLedgerReportCompute(models.TransientModel):
     For class fields, go more top at this file.
     """
 
-    _inherit = 'report_general_ledger_qweb'
+    _inherit = 'report_general_ledger'
 
     @api.multi
     def print_report(self, xlsx_report=False):
@@ -353,7 +353,7 @@ class GeneralLedgerReportCompute(models.TransientModel):
         return subquery_sum_amounts
 
     def _inject_account_values(self):
-        """Inject report values for report_general_ledger_qweb_account."""
+        """Inject report values for report_general_ledger_account."""
         query_inject_account = """
 WITH
     accounts AS
@@ -420,7 +420,7 @@ WITH
     initial_sum_amounts AS ( """ + init_subquery + """ ),
     final_sum_amounts AS ( """ + final_subquery + """ )
 INSERT INTO
-    report_general_ledger_qweb_account
+    report_general_ledger_account
     (
     report_id,
     create_uid,
@@ -640,7 +640,7 @@ AND
         return subquery_sum_amounts
 
     def _inject_partner_values(self, only_empty_partner=False):
-        """ Inject report values for report_general_ledger_qweb_partner.
+        """ Inject report values for report_general_ledger_partner.
 
         Only for "partner" accounts (payable and receivable).
         """
@@ -665,7 +665,7 @@ WITH
                     '""" + _('No partner allocated') + """'
                 ) AS partner_name
             FROM
-                report_general_ledger_qweb_account ra
+                report_general_ledger_account ra
             INNER JOIN
                 account_account a ON ra.account_id = a.id
             INNER JOIN
@@ -730,7 +730,7 @@ WITH
     initial_sum_amounts AS ( """ + init_subquery + """ ),
     final_sum_amounts AS ( """ + final_subquery + """ )
 INSERT INTO
-    report_general_ledger_qweb_partner
+    report_general_ledger_partner
     (
     report_account_id,
     create_uid,
@@ -864,7 +864,7 @@ AND
             is_partner_line=False,
             only_empty_partner_line=False,
             only_unaffected_earnings_account=False):
-        """ Inject report values for report_general_ledger_qweb_move_line.
+        """ Inject report values for report_general_ledger_move_line.
 
         If centralized option have been chosen,
         only non centralized accounts are computed.
@@ -877,7 +877,7 @@ AND
         """
         query_inject_move_line = """
 INSERT INTO
-    report_general_ledger_qweb_move_line
+    report_general_ledger_move_line
     (
         """
         if is_account_line:
@@ -999,13 +999,13 @@ FROM
         """
         if is_account_line:
             query_inject_move_line += """
-    report_general_ledger_qweb_account ra
+    report_general_ledger_account ra
             """
         elif is_partner_line:
             query_inject_move_line += """
-    report_general_ledger_qweb_partner rp
+    report_general_ledger_partner rp
 INNER JOIN
-    report_general_ledger_qweb_account ra ON rp.report_account_id = ra.id
+    report_general_ledger_account ra ON rp.report_account_id = ra.id
             """
         query_inject_move_line += """
 INNER JOIN
@@ -1128,7 +1128,7 @@ ORDER BY
         )
 
     def _inject_line_centralized_values(self):
-        """ Inject report values for report_general_ledger_qweb_move_line.
+        """ Inject report values for report_general_ledger_move_line.
 
         Only centralized accounts are computed.
         """
@@ -1147,7 +1147,7 @@ WITH
                 SUM(ml.balance) AS balance,
                 ml.currency_id AS currency_id
             FROM
-                report_general_ledger_qweb_account ra
+                report_general_ledger_account ra
             INNER JOIN
                 account_move_line ml ON ra.account_id = ml.account_id
             INNER JOIN
@@ -1181,7 +1181,7 @@ WITH
                 ra.id, ml.account_id, a.code, 2, ml.currency_id
         )
 INSERT INTO
-    report_general_ledger_qweb_move_line
+    report_general_ledger_move_line
     (
     report_account_id,
     create_uid,
@@ -1207,7 +1207,7 @@ SELECT
         OVER (PARTITION BY a.code ORDER BY ml.date)
     ) AS cumul_balance
 FROM
-    report_general_ledger_qweb_account ra
+    report_general_ledger_account ra
 INNER JOIN
     move_lines ml ON ra.account_id = ml.account_id
 INNER JOIN
@@ -1318,7 +1318,7 @@ ORDER BY
 
     def _inject_unaffected_earnings_account_values(self):
         """Inject the report values of the unaffected earnings account
-        for report_general_ledger_qweb_account."""
+        for report_general_ledger_account."""
         subquery_sum_amounts = """
             SELECT
                 SUM(COALESCE(sub.initial_balance, 0.0)) AS initial_balance,
@@ -1337,12 +1337,13 @@ ORDER BY
         subquery_sum_amounts += """
             ) sub
         """
+
         # pylint: disable=sql-injection
         query_inject_account = """
         WITH
             sum_amounts AS ( """ + subquery_sum_amounts + """ )
         INSERT INTO
-            report_general_ledger_qweb_account
+            report_general_ledger_account
             (
             report_id,
             create_uid,
@@ -1383,7 +1384,6 @@ ORDER BY
         if self.filter_cost_center_ids:
             query_inject_account_params['cost_center_ids'] = \
                 tuple(self.filter_cost_center_ids.ids)
-
         query_inject_account_params['company_id'] = self.company_id.id
         query_inject_account_params['unaffected_earnings_account_id'] = \
             self.unaffected_earnings_account.id
@@ -1402,6 +1402,5 @@ ORDER BY
         pl_account_ids = [r[0] for r in self.env.cr.fetchall()]
         query_inject_account_params['unaffected_earnings_account_ids'] = \
             tuple(pl_account_ids + [self.unaffected_earnings_account.id])
-
         self.env.cr.execute(query_inject_account,
                             query_inject_account_params)

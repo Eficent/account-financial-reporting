@@ -6,9 +6,10 @@
 
 from datetime import datetime
 from odoo import api, fields, models
+from odoo.tools.safe_eval import safe_eval
 
 
-class AgedPartnerBalance(models.TransientModel):
+class AgedPartnerBalanceWizard(models.TransientModel):
     """Aged partner balance report wizard."""
 
     _name = 'aged.partner.balance.wizard'
@@ -54,6 +55,22 @@ class AgedPartnerBalance(models.TransientModel):
             self.account_ids = None
 
     @api.multi
+    def button_export_html(self):
+        self.ensure_one()
+        action = self.env.ref(
+            'account_financial_report_qweb.action_report_aged_partner_balance')
+        vals = action.read()[0]
+        context1 = safe_eval(vals.get('context', {}))
+        model = self.env['report_aged_partner_balance']
+        report = model.create(self._prepare_report_aged_partner_balance())
+        report.compute_data_for_report()
+
+        context1['active_id'] = report.id
+        context1['active_ids'] = report.ids
+        vals['context'] = context1
+        return vals
+
+    @api.multi
     def button_export_pdf(self):
         self.ensure_one()
         return self._export()
@@ -76,6 +93,6 @@ class AgedPartnerBalance(models.TransientModel):
 
     def _export(self, xlsx_report=False):
         """Default export is PDF."""
-        model = self.env['report_aged_partner_balance_qweb']
+        model = self.env['report_aged_partner_balance']
         report = model.create(self._prepare_report_aged_partner_balance())
         return report.print_report(xlsx_report)

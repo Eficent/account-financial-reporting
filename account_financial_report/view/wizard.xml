@@ -117,7 +117,7 @@
             name="Account Financial Report (Multireports)"
             parent="account.final_accounting_reports"
             sequence="99"
-            groups="account_financial_report.group_afreport"
+            groups="account_financial_report_qweb.group_afreport"
             action="action_wizard_report"/>
         
         

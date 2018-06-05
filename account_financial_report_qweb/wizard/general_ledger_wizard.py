@@ -5,7 +5,9 @@
 # Copyright 2017 Akretion - Alexis de Lattre
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import models, fields, api
+
+from odoo import api, fields, models
+from odoo.tools.safe_eval import safe_eval
 
 
 class GeneralLedgerReportWizard(models.TransientModel):
@@ -114,6 +116,21 @@ class GeneralLedgerReportWizard(models.TransientModel):
             self.receivable_accounts_only = self.payable_accounts_only = False
 
     @api.multi
+    def button_export_html(self):
+        self.ensure_one()
+        action = self.env.ref(
+            'account_financial_report_qweb.action_report_general_ledger')
+        vals = action.read()[0]
+        context1 = safe_eval(vals.get('context', {}))
+        model = self.env['report_general_ledger']
+        report = model.create(self._prepare_report_general_ledger())
+        report.compute_data_for_report()
+        context1['active_id'] = report.id
+        context1['active_ids'] = report.ids
+        vals['context'] = context1
+        return vals
+
+    @api.multi
     def button_export_pdf(self):
         self.ensure_one()
         return self._export()
@@ -141,6 +158,6 @@ class GeneralLedgerReportWizard(models.TransientModel):
 
     def _export(self, xlsx_report=False):
         """Default export is PDF."""
-        model = self.env['report_general_ledger_qweb']
+        model = self.env['report_general_ledger']
         report = model.create(self._prepare_report_general_ledger())
         return report.print_report(xlsx_report)
