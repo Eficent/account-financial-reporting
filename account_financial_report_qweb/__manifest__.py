@@ -27,6 +27,7 @@
         'wizard/open_items_wizard_view.xml',
         'wizard/trial_balance_wizard_view.xml',
         'menuitems.xml',
+        'view/report_template.xml',
         'reports.xml',
         'report/templates/aged_partner_balance.xml',
         'report/templates/general_ledger.xml',
@@ -34,7 +35,8 @@
         'report/templates/layouts.xml',
         'report/templates/open_items.xml',
         'report/templates/trial_balance.xml',
-        'view/account_view.xml'
+        'view/account_view.xml',
+        'view/report_general_ledger.xml',
     ],
     'installable': True,
     'application': True,
