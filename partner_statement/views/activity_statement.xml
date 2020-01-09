@@ -35,7 +35,8 @@
                                 <thead>
                                     <tr>
                                         <th>Reference number</th>
-                                        <th>Date</th>
+                                        <th>Date Invoice</th>
+                                        <th>Due Date</th>
                                         <th>Description</th>
                                         <th class="amount">Amount</th>
                                         <th class="amount">Balance</th>
@@ -47,6 +48,7 @@
                                         <td>
                                             <span t-esc="d['start']"/>
                                         </td>
+                                        <td />
                                         <td>
                                             Balance Forward
                                         </td>
@@ -63,6 +65,9 @@
                                         </td>
                                         <td>
                                             <span t-esc="line['date']"/>
+                                        </td>
+                                        <td>
+                                            <span t-esc="line['date_maturity']"/>
                                         </td>
                                         <td>
                                             <t t-if="line['name'] != '/'">
@@ -96,6 +101,7 @@
                                         <td>
                                             <span t-esc="d['end']"/>
                                         </td>
+                                        <td />
                                         <td>
                                             Ending Balance
                                         </td>

@@ -36,7 +36,7 @@
                                 <thead>
                                     <tr>
                                         <th>Reference number</th>
-                                        <th>Date</th>
+                                        <th>Invoice Date</th>
                                         <th>Due Date</th>
                                         <th>Description</th>
                                         <th class="amount">Original</th>
