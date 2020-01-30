@@ -225,22 +225,20 @@
 <!--                        </span>-->
 <!--                    </t>-->
 <!--                </t>-->
-                <t t-if="partner_ +">
+                <t t-if="show_partner_details">
                     <t t-set="account_or_partner_line" t-value="line['code']"/>
                     <t
                     t-foreach="line['partners_data']" t-as="partner_line">
-<!--                    <t t-set="res_model" t-value="'res.partner'"/>-->
-                        <div class="act_as_cell">
-                            <span
-                                t-esc="partner_line['partner_id']">
-<!--                        <a t-att-data-active-id="partner_line['partner_id']"-->
-<!--                            t-att-data-res-model="res_model"-->
-<!--                            class="o_account_financial_reports_web_action"-->
-<!--                            t-att-style="style">-->
-<!--                            <t t-att-style="style"-->
-<!--                               t-esc="partner_line['name']"/></a>-->
+                    <t t-set="res_model" t-value="'res.partner'"/>
+                            <span>
+                        <a t-att-data-active-id="partner_line['partner_id']"
+                            t-att-data-res-model="res_model"
+                            class="o_account_financial_reports_web_action"
+                            t-att-style="style">
+                            <t t-att-style="style"
+                               t-esc="partner_line['name']"/></a>
                              </span>
-                        </div>
+
                 </t>
                 </t>
             </div>
