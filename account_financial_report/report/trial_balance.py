@@ -90,13 +90,15 @@ class TrialBalanceReport(models.AbstractModel):
             Moves.append(move_data[move.id])
         return moves.ids, Moves, move_data
 
-    def _get_move_lines_order(self, account_ids, wizard,
+    def _get_move_lines_order(self, account_ids, wizard, journal_ids,
                               partner_ids):
         return ''
 
-    def _get_move_lines_domain(self, account_ids, wizard,
+    def _get_move_lines_domain(self, account_ids, wizard, journal_ids,
                                partner_ids):
         domain = []
+        if journal_ids:
+            domain += [('journal_id', 'in', journal_ids)]
         if account_ids:
             domain += [('account_id', 'in', account_ids)]
         if partner_ids:
@@ -120,12 +122,12 @@ class TrialBalanceReport(models.AbstractModel):
                 'currency_id': ml.currency_id.id,
             }
 
-    def _get_move_lines(self, account_ids, wizard, partner_ids):
+    def _get_move_lines(self, account_ids, wizard, journal_ids, partner_ids):
         move_lines = self.env['account.move.line'].search(
-            self._get_move_lines_domain(account_ids, wizard,
+            self._get_move_lines_domain(account_ids, wizard, journal_ids,
                                         partner_ids),
             order=self._get_move_lines_order(account_ids, wizard,
-                                             partner_ids))
+                                             journal_ids, partner_ids))
         Move_Lines = {}
         accounts = self.env['account.account']
         partners = self.env['res.partner']
@@ -203,7 +205,7 @@ class TrialBalanceReport(models.AbstractModel):
             move_line_ids, move_lines_data, account_ids_data, \
             partner_ids_data, currency_ids_data = \
                 self._get_move_lines(
-                account_ids, wizard, partner_ids)
+                account_ids, wizard, journal_ids, partner_ids)
         account_totals={}
         for move_id in move_lines_data.keys():
             for move_line_data in move_lines_data[move_id]:
