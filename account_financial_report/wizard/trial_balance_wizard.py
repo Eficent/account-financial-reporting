@@ -5,9 +5,9 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools.safe_eval import safe_eval
 from odoo.tools import pycompat
-from odoo.exceptions import UserError, ValidationError
 
 
 class TrialBalanceReportWizard(models.TransientModel):
@@ -85,6 +85,7 @@ class TrialBalanceReportWizard(models.TransientModel):
              'account currency is not setup through chart of accounts '
              'will display initial and final balance in that currency.'
     )
+
 
     @api.multi
     @api.constrains('hierarchy_on', 'show_hierarchy_level')
@@ -183,23 +184,40 @@ class TrialBalanceReportWizard(models.TransientModel):
         if self.show_partner_details:
             self.receivable_accounts_only = self.payable_accounts_only = True
         else:
-            self.receivable_accounts_only = self.payable_accounts_only = False
+            self.receivable_accounts_only = self.\
+                payable_accounts_only = False
+
+    @api.multi
+    def _print_report(self, report_type):
+        self.ensure_one()
+        data = self._prepare_report_trial_balance()
+        if report_type == 'xlsx':
+            report_name = 'a_f_r.report_trial_balance_xlsx'
+        else:
+            report_name = 'account_financial_report.trial_balance'
+        return self.env['ir.actions.report'].search(
+            [('report_name', '=', report_name),
+             ('report_type', '=', report_type)], limit=1).report_action(
+            self, data=data)
+
 
     @api.multi
     def button_export_html(self):
         self.ensure_one()
+        report_type = 'qweb-html'
         action = self.env.ref(
             'account_financial_report.action_report_trial_balance')
         vals = action.read()[0]
+        model = 'report.account_financial_report.trial_balance'
+        data = self._prepare_report_trial_balance()
+        data = self.env[model]._get_report_values(self.ids, data)
+        vals['data'] = data
         context1 = vals.get('context', {})
         if isinstance(context1, pycompat.string_types):
             context1 = safe_eval(context1)
-        model = self.env['report_trial_balance']
-        report = model.create(self._prepare_report_trial_balance())
-        report.compute_data_for_report()
-
-        context1['active_id'] = report.id
-        context1['active_ids'] = report.ids
+        context1['active_model'] = model
+        context1['data'] = data
+        context1['active_id'] = self.id
         vals['context'] = context1
         return vals
 
@@ -217,16 +235,33 @@ class TrialBalanceReportWizard(models.TransientModel):
 
     def _prepare_report_trial_balance(self):
         self.ensure_one()
+        journals = self.journal_ids
+        if not journals:
+            # Not selecting a journal means that we'll display all journals
+            journals = self.env['account.journal'].search(
+                [('company_id', '=', self.company_id.id)])
+        accounts = self.account_ids
+        if not accounts:
+            # Not selecting an account means that we'll display all accounts
+            accounts = self.env['account.account'].search(
+                [('company_id', '=', self.company_id.id)])
+        partners = self.partner_ids
+        if not partners:
+            # Not selecting a partner means that we will display all
+            # partners
+            partners = self.env['res.partner'].search(
+                [('company_id', '=', self.company_id.id)])
         return {
+            'wizard_id':self.id,
             'date_from': self.date_from,
             'date_to': self.date_to,
             'only_posted_moves': self.target_move == 'posted',
             'hide_account_at_0': self.hide_account_at_0,
             'foreign_currency': self.foreign_currency,
             'company_id': self.company_id.id,
-            'filter_account_ids': [(6, 0, self.account_ids.ids)],
-            'filter_partner_ids': [(6, 0, self.partner_ids.ids)],
-            'filter_journal_ids': [(6, 0, self.journal_ids.ids)],
+            'account_ids': accounts.ids,
+            'partner_ids': partners.ids,
+            'journal_ids': journals.ids,
             'fy_start_date': self.fy_start_date,
             'hierarchy_on': self.hierarchy_on,
             'limit_hierarchy_level': self.limit_hierarchy_level,
@@ -237,7 +272,6 @@ class TrialBalanceReportWizard(models.TransientModel):
 
     def _export(self, report_type):
         """Default export is PDF."""
-        model = self.env['report_trial_balance']
-        report = model.create(self._prepare_report_trial_balance())
-        report.compute_data_for_report()
-        return report.print_report(report_type)
+        return self._print_report(report_type)
+
+
