@@ -386,7 +386,7 @@
                     <div class="act_as_cell left">
                         <t t-if="taxes_data and line['tax_ids']">
                             <t t-foreach="line['tax_ids']" t-as="tax_id">
-                                <span t-esc="o._get_atr_from_dict(tax_id, taxes_data, 'amount')"/> <span t-esc="o._get_atr_from_dict(tax_id, taxes_data, 'string')"/>
+                                <span t-esc="o._get_atr_from_dict(tax_id, taxes_data, 'tax_name')"/>
                             </t>
                         </t>
                     </div>

@@ -169,8 +169,8 @@ class GeneralLedgerXslx(models.AbstractModel):
                         taxes_description = ""
                         tags = ""
                         for tax_id in line['tax_ids']:
-                            taxes_description += str(taxes_data[tax_id][
-                                'amount'])+" "+taxes_data[tax_id]['string']+" "
+                            taxes_description += taxes_data[tax_id][
+                                'tax_name'] + " "
                         for tag_id in line['tag_ids']:
                             tags += tags_data[tag_id]['name']+" "
                         line.update({
@@ -231,9 +231,8 @@ class GeneralLedgerXslx(models.AbstractModel):
                             taxes_description = ""
                             tags = ""
                             for tax_id in line['tax_ids']:
-                                taxes_description += \
-                                    str(taxes_data[tax_id]['amount']) + " " + \
-                                    taxes_data[tax_id]['string'] + " "
+                                taxes_description += taxes_data[tax_id][
+                                    'tax_name'] + " "
                             for tag_id in line['tag_ids']:
                                 tags += tags_data[tag_id]['name'] + " "
                             line.update({

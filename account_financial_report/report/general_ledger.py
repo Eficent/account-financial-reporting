@@ -50,11 +50,14 @@ class GeneralLedgerReport(models.AbstractModel):
                 'id': tax.id,
                 'amount': tax.amount,
                 'amount_type': tax.amount_type,
+                'display_name': tax.display_name,
             }})
             if tax.amount_type == 'percent' or tax.amount_type == 'division':
                 taxes_data[tax.id]['string'] = '%'
             else:
                 taxes_data[tax.id]['string'] = ''
+            taxes_data[tax.id]['tax_name'] = tax.display_name + ' (' + \
+                str(tax.amount) + taxes_data[tax.id]['string'] + ')'
         return taxes_data
 
     def _get_acc_prt_accounts_ids(self, company_id):
