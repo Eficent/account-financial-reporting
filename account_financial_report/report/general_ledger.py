@@ -456,7 +456,8 @@ class GeneralLedgerReport(models.AbstractModel):
         return move_lines
 
     @api.model
-    def _create_general_ledger(self, gen_led_data, accounts_data):
+    def _create_general_ledger(
+            self, gen_led_data, accounts_data, show_partner_details):
         general_ledger = []
         for acc_id in gen_led_data.keys():
             account = {}
@@ -479,29 +480,49 @@ class GeneralLedgerReport(models.AbstractModel):
                     move_lines, gen_led_data[acc_id]['init_bal']['balance'])
                 account.update({'move_lines': move_lines})
             else:
-                list_partner = []
-                for prt_id in gen_led_data[acc_id].keys():
-                    partner = {}
+                if show_partner_details:
+                    list_partner = []
+                    for prt_id in gen_led_data[acc_id].keys():
+                        partner = {}
+                        move_lines = []
+                        if not isinstance(prt_id, int):
+                            account.update({prt_id: gen_led_data[acc_id][
+                                prt_id]})
+                        else:
+                            for ml_id in gen_led_data[acc_id][prt_id].keys():
+                                if not isinstance(ml_id, int):
+                                    partner.update({ml_id: gen_led_data[acc_id][
+                                        prt_id][ml_id]})
+                                else:
+                                    move_lines += [
+                                        gen_led_data[acc_id][prt_id][ml_id]]
+                            move_lines = sorted(move_lines,
+                                                key=lambda k: (k['date']))
+                            move_lines = self._recalculate_cumul_balance(
+                                move_lines,
+                                gen_led_data[acc_id][prt_id]['init_bal'][
+                                    'balance'])
+                            partner.update({'move_lines': move_lines})
+                            list_partner += [partner]
+                    account.update({'list_partner': list_partner})
+                else:
                     move_lines = []
-                    if not isinstance(prt_id, int):
-                        account.update({prt_id: gen_led_data[acc_id][prt_id]})
-                    else:
-                        for ml_id in gen_led_data[acc_id][prt_id].keys():
-                            if not isinstance(ml_id, int):
-                                partner.update({ml_id: gen_led_data[acc_id][
-                                    prt_id][ml_id]})
-                            else:
-                                move_lines += [
-                                    gen_led_data[acc_id][prt_id][ml_id]]
-                        move_lines = sorted(move_lines,
-                                            key=lambda k: (k['date']))
-                        move_lines = self._recalculate_cumul_balance(
-                            move_lines,
-                            gen_led_data[acc_id][prt_id]['init_bal'][
-                                'balance'])
-                        partner.update({'move_lines': move_lines})
-                        list_partner += [partner]
-                account.update({'list_partner': list_partner})
+                    for prt_id in gen_led_data[acc_id].keys():
+                        if not isinstance(prt_id, int):
+                            account.update({prt_id: gen_led_data[acc_id][
+                                prt_id]})
+                        else:
+                            for ml_id in gen_led_data[acc_id][prt_id].keys():
+                                if isinstance(ml_id, int):
+                                    move_lines += [
+                                        gen_led_data[acc_id][prt_id][ml_id]]
+                    move_lines = sorted(move_lines, key=lambda k: (k['date']))
+                    move_lines = self._recalculate_cumul_balance(
+                        move_lines, gen_led_data[acc_id]['init_bal']['balance'])
+                    account.update({
+                        'move_lines': move_lines,
+                        'partners': False,
+                    })
             general_ledger += [account]
         return general_ledger
 
@@ -585,6 +606,7 @@ class GeneralLedgerReport(models.AbstractModel):
         account_ids = data['account_ids']
         analytic_tag_ids = data['analytic_tag_ids']
         cost_center_ids = data['cost_center_ids']
+        show_partner_details = data['show_partner_details']
         hide_account_at_0 = data['hide_account_at_0']
         foreign_currency = data['foreign_currency']
         only_posted_moves = data['only_posted_moves']
@@ -604,7 +626,8 @@ class GeneralLedgerReport(models.AbstractModel):
                 only_posted_moves, hide_account_at_0, date_from, date_to,
                 partners_data, gen_ld_data, partners_ids,
                 centralize, analytic_tag_ids, cost_center_ids)
-        general_ledger = self._create_general_ledger(gen_ld_data, accounts_data)
+        general_ledger = self._create_general_ledger(
+            gen_ld_data, accounts_data, show_partner_details)
         if centralize:
             for account in general_ledger:
                 if account['centralized']:
