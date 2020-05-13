@@ -143,7 +143,7 @@
         <div class="act_as_row lines">
             <!--## date-->
             <div class="act_as_cell left">
-                <span t-raw="line['date']"/>
+                <span t-raw="line['date'].strftime('%d/%m/%Y')"/>
             </div>
             <!--## move-->
             <div class="act_as_cell left">
@@ -159,11 +159,11 @@
             </div>
             <!--## journal-->
             <div class="act_as_cell left">
-                <span t-esc="line['journal']"/>
+                <span t-esc="journals_data[line['journal_id']]['code']"/>
             </div>
             <!--## account code-->
             <div class="act_as_cell left">
-                <span t-esc="line['account']"/>
+                <span t-esc="accounts_data[account_id]['code']"/>
             </div>
             <!--## partner-->
             <div class="act_as_cell left">
