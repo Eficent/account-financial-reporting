@@ -26,7 +26,7 @@ class OpenItemsXslx(models.AbstractModel):
             2: {'header': _('Journal'), 'field': 'journal', 'width': 8},
             3: {'header': _('Account'), 'field': 'account', 'width': 9},
             4: {'header': _('Partner'), 'field': 'partner_name', 'width': 25},
-            5: {'header': _('Ref - Label'), 'field': 'ref', 'width': 40},
+            5: {'header': _('Ref - Label'), 'field': 'ref_label', 'width': 40},
             6: {'header': _('Due date'), 'field': 'date_maturity', 'width': 11},
             7: {'header': _('Original'),
                 'field': 'original',

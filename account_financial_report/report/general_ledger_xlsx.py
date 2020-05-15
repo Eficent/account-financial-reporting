@@ -31,7 +31,7 @@ class GeneralLedgerXslx(models.AbstractModel):
                 'field': 'taxes_description',
                 'width': 15},
             5: {'header': _('Partner'), 'field': 'partner_name', 'width': 25},
-            6: {'header': _('Ref - Label'), 'field': 'ref', 'width': 40},
+            6: {'header': _('Ref - Label'), 'field': 'ref_label', 'width': 40},
             7: {'header': _('Cost center'),
                 'field': 'cost_center',
                 'width': 15},
@@ -165,7 +165,7 @@ class GeneralLedgerXslx(models.AbstractModel):
                             'currency_name': line['currency_id'][1],
                             'currency_id': line['currency_id'][0],
                         })
-                    if line['ref'] != 'Centralized entries':
+                    if line['ref_label'] != 'Centralized entries':
                         taxes_description = ""
                         tags = ""
                         for tax_id in line['tax_ids']:
@@ -227,7 +227,7 @@ class GeneralLedgerXslx(models.AbstractModel):
                                 'currency_name': line['currency_id'][1],
                                 'currency_id': line['currency_id'][0],
                             })
-                        if line['ref'] != 'Centralized entries':
+                        if line['ref_label'] != 'Centralized entries':
                             taxes_description = ""
                             tags = ""
                             for tax_id in line['tax_ids']:

@@ -199,6 +199,19 @@ class OpenItemsReport(models.AbstractModel):
             if not float_is_zero(move_line['debit'], precision_digits=2):
                 original = move_line['debit']
 
+            if move_line['ref'] == move_line['name']:
+                if move_line['ref']:
+                    ref_label = move_line['ref']
+                else:
+                    ref_label = ''
+            elif not move_line['ref']:
+                ref_label = move_line['name']
+            elif not move_line['name']:
+                ref_label = move_line['ref']
+            else:
+                ref_label = move_line['ref'] + str(' - ') + \
+                            move_line['name']
+
             move_line.update({
                 'date': move_line['date'],
                 'date_maturity': move_line["date_maturity"]
@@ -206,7 +219,7 @@ class OpenItemsReport(models.AbstractModel):
                 'original': original,
                 'partner_id': prt_id,
                 'partner_name': prt_name,
-                'ref': '' if not move_line['ref'] else move_line['ref'],
+                'ref_label': ref_label,
                 'journal_id': move_line['journal_id'][0],
                 'move_name': move_line['move_id'][1],
                 'currency_id': move_line['currency_id'][0]

@@ -290,6 +290,7 @@ class GeneralLedgerReport(models.AbstractModel):
             'partner_name': move_line['partner_id'][1] if
             move_line['partner_id'] else "",
             'ref': '' if not move_line['ref'] else move_line['ref'],
+            'name': '' if not move_line['name'] else move_line['name'],
             'tax_ids': move_line['tax_ids'],
             'debit': move_line['debit'],
             'credit': move_line['credit'],
@@ -302,6 +303,15 @@ class GeneralLedgerReport(models.AbstractModel):
             'tag_ids': move_line['analytic_tag_ids'],
             'currency_id': move_line['currency_id'],
         }
+        if move_line_data['ref'] == move_line_data['name'] or move_line_data[
+                'ref'] == '':
+            ref_label = move_line_data['name']
+        elif move_line_data['name'] == '':
+            ref_label = move_line_data['ref']
+        else:
+            ref_label = move_line_data['ref'] + str(' - ') + \
+                            move_line_data['name']
+        move_line_data.update({'ref_label': ref_label})
         return move_line_data
 
     @api.model
@@ -372,7 +382,7 @@ class GeneralLedgerReport(models.AbstractModel):
             'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
             'partner_id', 'debit', 'credit', 'balance', 'currency_id',
             'full_reconcile_id', 'tax_ids', 'analytic_tag_ids',
-            'amount_currency', 'ref']
+            'amount_currency', 'ref', 'name']
         move_lines = self.env['account.move.line'].search_read(
             domain=domain,
             fields=ml_fields)
@@ -544,7 +554,7 @@ class GeneralLedgerReport(models.AbstractModel):
                 date = date_to
             centralized_ml[jnl_id][month].update({
                 'journal_id': jnl_id,
-                'ref': 'Centralized entries',
+                'ref_label': 'Centralized entries',
                 'date': date,
                 'debit': 0.0,
                 'credit': 0.0,
