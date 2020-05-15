@@ -209,8 +209,7 @@ class OpenItemsReport(models.AbstractModel):
             elif not move_line['name']:
                 ref_label = move_line['ref']
             else:
-                ref_label = move_line['ref'] + str(' - ') + \
-                            move_line['name']
+                ref_label = move_line['ref'] + str(' - ') + move_line['name']
 
             move_line.update({
                 'date': move_line['date'],
