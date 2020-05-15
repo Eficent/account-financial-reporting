@@ -72,11 +72,14 @@ class OpenItemsReport(models.AbstractModel):
                                 debit_amount, credit_amount, ml_ids,
                                 account_ids, company_id, partner_ids,
                                 target_moves):
-        reconciled_ids = list(debit_ids) + list(credit_ids)
-        new_ml_ids = []
-        for reconciled_id in reconciled_ids:
-            if reconciled_id not in ml_ids and reconciled_id not in new_ml_ids:
-                new_ml_ids += [reconciled_id]
+        debit_ids = set(debit_ids)
+        credit_ids = set(credit_ids)
+        in_credit_but_not_in_debit = credit_ids - debit_ids
+        reconciled_ids = list(debit_ids) + list(in_credit_but_not_in_debit)
+        reconciled_ids = set(reconciled_ids)
+        ml_ids = set(ml_ids)
+        new_ml_ids = reconciled_ids - ml_ids
+        new_ml_ids = list(new_ml_ids)
         new_domain = self._get_new_move_lines_domain(new_ml_ids, account_ids,
                                                      company_id, partner_ids,
                                                      target_moves)
@@ -165,15 +168,11 @@ class OpenItemsReport(models.AbstractModel):
                     debit_amount, credit_amount, ml_ids, account_ids,
                     company_id, partner_ids, target_move
                 )
-            moves_lines_to_remove = []
-            for move_line in move_lines:
-                if move_line['date'] > date_at_object or \
-                    float_is_zero(move_line['amount_residual'],
-                                  precision_digits=2):
-                    moves_lines_to_remove.append(move_line)
-            if len(moves_lines_to_remove) > 0:
-                for move_line_to_remove in moves_lines_to_remove:
-                    move_lines.remove(move_line_to_remove)
+            move_lines = [move_line for move_line in move_lines if
+                          move_line['date'] <= date_at_object and not
+                          float_is_zero(move_line['amount_residual'],
+                                        precision_digits=2)]
+
         open_items_move_lines_data = {}
         for move_line in move_lines:
             journals_ids.add(move_line['journal_id'][0])
