@@ -5,6 +5,7 @@
 from odoo import models, api
 import calendar
 import datetime
+import operator
 
 
 class GeneralLedgerReport(models.AbstractModel):
@@ -369,6 +370,22 @@ class GeneralLedgerReport(models.AbstractModel):
             gen_ld_data[acc_id]['fin_bal']['bal_curr'] = 0.0
         return gen_ld_data
 
+    def _get_reconciled_after_date_to_ids(self, full_reconcile_ids, date_to):
+        full_reconcile_ids = list(full_reconcile_ids)
+        domain = [('max_date', '>', date_to),
+                  ('full_reconcile_id', 'in', full_reconcile_ids)]
+        fields = ['full_reconcile_id']
+        reconciled_after_date_to = \
+            self.env['account.partial.reconcile'].search_read(
+                domain=domain,
+                fields=fields
+            )
+        rec_after_date_to_ids = list(map(
+            operator.itemgetter('full_reconcile_id'),
+            reconciled_after_date_to))
+        rec_after_date_to_ids = [i[0] for i in rec_after_date_to_ids]
+        return rec_after_date_to_ids
+
     def _get_period_ml_data(
             self, account_ids, partner_ids, company_id, foreign_currency,
             only_posted_moves, hide_account_at_0, date_from, date_to,
@@ -455,19 +472,25 @@ class GeneralLedgerReport(models.AbstractModel):
         accounts_data = self._get_accounts_data(gen_ld_data.keys())
         taxes_data = self._get_taxes_data(list(taxes_ids))
         tags_data = self._get_tags_data(list(tags_ids))
+        rec_after_date_to_ids = self._get_reconciled_after_date_to_ids(
+            full_reconcile_data.keys(), date_to)
         return gen_ld_data, accounts_data, partners_data, journals_data, \
-            full_reconcile_data, taxes_data, tags_data
+            full_reconcile_data, taxes_data, tags_data, rec_after_date_to_ids
 
     @api.model
-    def _recalculate_cumul_balance(self, move_lines, last_cumul_balance):
+    def _recalculate_cumul_balance(self, move_lines, last_cumul_balance,
+                                   rec_after_date_to_ids):
         for move_line in move_lines:
             move_line['balance'] += last_cumul_balance
             last_cumul_balance = move_line['balance']
+            if move_line['rec_id'] in rec_after_date_to_ids:
+                move_line['rec_name'] = str('*')+move_line['rec_name']
         return move_lines
 
     @api.model
     def _create_general_ledger(
-            self, gen_led_data, accounts_data, show_partner_details):
+            self, gen_led_data, accounts_data,
+            show_partner_details, rec_after_date_to_ids):
         general_ledger = []
         for acc_id in gen_led_data.keys():
             account = {}
@@ -487,7 +510,8 @@ class GeneralLedgerReport(models.AbstractModel):
                         move_lines += [gen_led_data[acc_id][ml_id]]
                 move_lines = sorted(move_lines, key=lambda k: (k['date']))
                 move_lines = self._recalculate_cumul_balance(
-                    move_lines, gen_led_data[acc_id]['init_bal']['balance'])
+                    move_lines, gen_led_data[acc_id]['init_bal']['balance'],
+                    rec_after_date_to_ids)
                 account.update({'move_lines': move_lines})
             else:
                 if show_partner_details:
@@ -511,7 +535,8 @@ class GeneralLedgerReport(models.AbstractModel):
                             move_lines = self._recalculate_cumul_balance(
                                 move_lines,
                                 gen_led_data[acc_id][prt_id]['init_bal'][
-                                    'balance'])
+                                    'balance'],
+                                rec_after_date_to_ids)
                             partner.update({'move_lines': move_lines})
                             list_partner += [partner]
                     account.update({'list_partner': list_partner})
@@ -528,7 +553,8 @@ class GeneralLedgerReport(models.AbstractModel):
                                         gen_led_data[acc_id][prt_id][ml_id]]
                     move_lines = sorted(move_lines, key=lambda k: (k['date']))
                     move_lines = self._recalculate_cumul_balance(
-                        move_lines, gen_led_data[acc_id]['init_bal']['balance'])
+                        move_lines, gen_led_data[acc_id]['init_bal'][
+                            'balance'], rec_after_date_to_ids)
                     account.update({
                         'move_lines': move_lines,
                         'partners': False,
@@ -630,14 +656,17 @@ class GeneralLedgerReport(models.AbstractModel):
                 cost_center_ids)
         centralize = data['centralize']
         gen_ld_data, accounts_data, partners_data, journals_data,  \
-            full_reconcile_data, taxes_data, tags_data =  \
+            full_reconcile_data, taxes_data, \
+            tags_data, rec_after_date_to_ids =  \
             self._get_period_ml_data(
                 account_ids, partner_ids, company_id, foreign_currency,
                 only_posted_moves, hide_account_at_0, date_from, date_to,
                 partners_data, gen_ld_data, partners_ids,
                 centralize, analytic_tag_ids, cost_center_ids)
         general_ledger = self._create_general_ledger(
-            gen_ld_data, accounts_data, show_partner_details)
+            gen_ld_data, accounts_data,
+            show_partner_details, rec_after_date_to_ids
+        )
         if centralize:
             for account in general_ledger:
                 if account['centralized']:
