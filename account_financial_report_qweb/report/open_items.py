@@ -28,12 +28,18 @@ class OpenItemsReport(models.TransientModel):
     company_id = fields.Many2one(comodel_name='res.company')
     filter_account_ids = fields.Many2many(comodel_name='account.account')
     filter_partner_ids = fields.Many2many(comodel_name='res.partner')
+    operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
 
     # Data fields, used to browse report data
     account_ids = fields.One2many(
         comodel_name='report_open_items_qweb_account',
         inverse_name='report_id'
     )
+    operating_unit_names = fields.Char(compute='_compute_operating_unit_names')
+
+    @api.depends('operating_unit_ids')
+    def _compute_operating_unit_names(self):
+        self.operating_unit_names = ' - '.join(self.operating_unit_ids.mapped('name'))
 
 
 class OpenItemsReportAccount(models.TransientModel):
@@ -53,7 +59,6 @@ class OpenItemsReportAccount(models.TransientModel):
         'account.account',
         index=True
     )
-
     # Data fields, used for report display
     code = fields.Char()
     name = fields.Char()
@@ -125,7 +130,7 @@ class OpenItemsReportMoveLine(models.TransientModel):
         ondelete='cascade',
         index=True
     )
-
+    operating_unit_id = fields.Many2one(comodel_name='operating.unit')
     # Data fields, used to keep link with real object
     move_line_id = fields.Many2one('account.move.line')
 
@@ -515,6 +520,7 @@ INSERT INTO
     label,
     amount_total_due,
     amount_residual,
+    operating_unit_id,
     currency_id,
     amount_total_due_currency,
     amount_residual_currency
@@ -548,6 +554,7 @@ SELECT
     CONCAT_WS(' - ', NULLIF(ml.ref, ''), NULLIF(ml.name, '')) AS label,
     ml.balance,
     ml2.amount_residual,
+    ml.operating_unit_id as operating_unit_id,
     c.id AS currency_id,
     ml.amount_currency,
     ml2.amount_residual_currency
@@ -590,6 +597,11 @@ AND
 AND
     m.state = 'posted'
         """
+        if self.operating_unit_ids:
+            query_inject_move_line += """
+    AND
+    m.operating_unit_id in %s
+        """
         if only_empty_partner_line:
             query_inject_move_line += """
 AND
@@ -609,18 +621,33 @@ ORDER BY
             """
         full_reconcile_date = fields.Datetime.to_string(
             fields.Datetime.from_string(self.date_at) + timedelta(days=1))
-        self.env.cr.execute(
-            query_inject_move_line,
-            (self.date_at,
-             self.id,
-             full_reconcile_date,
-             self.date_at,
-             self.id,
-             full_reconcile_date,
-             self.env.uid,
-             self.id,
-             self.date_at,
-             )
+        if self.operating_unit_ids:
+            self.env.cr.execute(
+                query_inject_move_line,
+                (self.date_at,
+                self.id,
+                full_reconcile_date,
+                self.date_at,
+                self.id,
+                full_reconcile_date,
+                self.env.uid,
+                self.id,
+                self.date_at,
+                tuple(self.operating_unit_ids.ids),
+                ))
+        else:
+            self.env.cr.execute(
+                query_inject_move_line,
+                (self.date_at,
+                self.id,
+                full_reconcile_date,
+                self.date_at,
+                self.id,
+                full_reconcile_date,
+                self.env.uid,
+                self.id,
+                self.date_at
+                )
         )
 
     def _compute_partners_and_accounts_cumul(self):

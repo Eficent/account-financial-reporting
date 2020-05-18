@@ -31,13 +31,14 @@ class AgedPartnerBalance(models.TransientModel):
         comodel_name='account.account',
         string='Filter accounts',
     )
-    receivable_accounts_only = fields.Boolean()
-    payable_accounts_only = fields.Boolean()
+    receivable_accounts_only = fields.Boolean(default=True)
+    payable_accounts_only = fields.Boolean(default=True)
     partner_ids = fields.Many2many(
         comodel_name='res.partner',
         string='Filter partners',
     )
     show_move_line_details = fields.Boolean()
+    operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
 
     @api.onchange('company_id')
     def onchange_company_id(self):
@@ -117,6 +118,7 @@ class AgedPartnerBalance(models.TransientModel):
             'date_at': self.date_at,
             'only_posted_moves': self.target_move == 'posted',
             'company_id': self.company_id.id,
+            'operating_unit_ids': [(6, 0, self.operating_unit_ids.ids)],
             'filter_account_ids': [(6, 0, self.account_ids.ids)],
             'filter_partner_ids': [(6, 0, self.partner_ids.ids)],
             'show_move_line_details': self.show_move_line_details,

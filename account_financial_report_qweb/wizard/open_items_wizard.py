@@ -39,13 +39,14 @@ class OpenItemsReportWizard(models.TransientModel):
              'If partners are filtered, '
              'debits and credits totals will not match the trial balance.'
     )
-    receivable_accounts_only = fields.Boolean()
-    payable_accounts_only = fields.Boolean()
+    receivable_accounts_only = fields.Boolean(default=True)
+    payable_accounts_only = fields.Boolean(default=True)
     partner_ids = fields.Many2many(
         comodel_name='res.partner',
         string='Filter partners',
         default=lambda self: self._default_partners(),
     )
+    operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
     foreign_currency = fields.Boolean(
         string='Show foreign currency',
         default=lambda self: self._default_foreign_currency(),
@@ -151,6 +152,7 @@ class OpenItemsReportWizard(models.TransientModel):
             'hide_account_at_0': self.hide_account_at_0,
             'foreign_currency': self.foreign_currency,
             'company_id': self.company_id.id,
+            'operating_unit_ids': [(6, 0, self.operating_unit_ids.ids)],
             'filter_account_ids': [(6, 0, self.account_ids.ids)],
             'filter_partner_ids': [(6, 0, self.partner_ids.ids)],
         }

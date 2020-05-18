@@ -16,7 +16,12 @@
         <t t-set="show_move_line_details" t-value="o.show_move_line_details"/>
 
         <!-- Defines global variables used by internal layout -->
-        <t t-set="title" >Aged Partner Balance - <t t-raw="o.company_id.name"/> - <t t-raw="o.company_id.currency_id.name"/></t>
+        <t t-if="o.operating_unit_ids">
+            <t t-set="title" >Aged Partner Balance - <t t-raw="o.operating_unit_names"/> - <t t-raw="o.company_id.currency_id.name"/></t>
+        </t>
+        <t t-if="not o.operating_unit_ids">
+            <t t-set="title" >Aged Partner Balance - <t t-raw="o.company_id.name"/> - <t t-raw="o.company_id.currency_id.name"/></t>
+        </t>
         <t t-set="res_company" t-value="o.company_id"/>
 
         <div class="page">

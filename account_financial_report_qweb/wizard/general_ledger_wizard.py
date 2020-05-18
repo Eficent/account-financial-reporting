@@ -54,8 +54,8 @@ class GeneralLedgerReportWizard(models.TransientModel):
     show_analytic_tags = fields.Boolean(
         string='Show analytic tags',
     )
-    receivable_accounts_only = fields.Boolean()
-    payable_accounts_only = fields.Boolean()
+    receivable_accounts_only = fields.Boolean(default=True)
+    payable_accounts_only = fields.Boolean(default=True)
     partner_ids = fields.Many2many(
         comodel_name='res.partner',
         string='Filter partners',

@@ -361,7 +361,13 @@ class AbstractReportXslx(ReportXlsx):
         pass
 
     def _get_report_complete_name(self, report, prefix):
-        if report.company_id:
+        if report.operating_unit_ids and report.company_id:
+            suffix = ''
+            for ou in report.operating_unit_ids:
+                suffix += ' - %s' % ou.name
+            suffix += ' - %s' % (report.company_id.currency_id.name)
+            return prefix + suffix
+        elif report.company_id:
             suffix = ' - %s - %s' % (
                 report.company_id.name, report.company_id.currency_id.name)
             return prefix + suffix

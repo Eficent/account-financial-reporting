@@ -27,6 +27,13 @@ class AgedPartnerBalanceReport(models.TransientModel):
     company_id = fields.Many2one(comodel_name='res.company')
     filter_account_ids = fields.Many2many(comodel_name='account.account')
     filter_partner_ids = fields.Many2many(comodel_name='res.partner')
+    operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    operating_unit_names = fields.Char(compute='_compute_operating_unit_names')
+
+    @api.depends('operating_unit_ids')
+    def _compute_operating_unit_names(self):
+        self.operating_unit_names = ' - '.join(self.operating_unit_ids.mapped('name'))
+
     show_move_line_details = fields.Boolean()
 
     # Open Items Report Data fields, used as base for compute the data reports
@@ -172,7 +179,7 @@ class AgedPartnerBalanceReportMoveLine(models.TransientModel):
     account = fields.Char()
     partner = fields.Char()
     label = fields.Char()
-
+    operating_unit_id = fields.Many2one('operating.unit')
     amount_residual = fields.Float(digits=(16, 2))
     current = fields.Float(digits=(16, 2))
     age_30_days = fields.Float(digits=(16, 2))
@@ -224,6 +231,7 @@ class AgedPartnerBalanceReportCompute(models.TransientModel):
             'only_posted_moves': self.only_posted_moves,
             'company_id': self.company_id.id,
             'filter_account_ids': [(6, 0, self.filter_account_ids.ids)],
+            'operating_unit_ids': [(6, 0, self.operating_unit_ids.ids)],
             'filter_partner_ids': [(6, 0, self.filter_partner_ids.ids)],
         }
 
@@ -473,7 +481,8 @@ INSERT INTO
         age_60_days,
         age_90_days,
         age_120_days,
-        older
+        older,
+        operating_unit_id
     )
 SELECT
     rp.id AS report_partner_id,
@@ -519,7 +528,8 @@ SELECT
     CASE
         WHEN rlo.date_due < date_range.date_less_120_days
         THEN rlo.amount_residual
-    END AS older
+    END AS older,
+    rlo.operating_unit_id as operating_unit_id
 FROM
     date_range,
     report_open_items_qweb_move_line rlo
