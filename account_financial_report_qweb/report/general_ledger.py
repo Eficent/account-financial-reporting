@@ -45,6 +45,8 @@ class GeneralLedgerReport(models.TransientModel):
     centralize = fields.Boolean()
     # todo implement
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
 
     # Flag fields, used for report display
     show_cost_center = fields.Boolean(

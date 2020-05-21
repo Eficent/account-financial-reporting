@@ -29,6 +29,8 @@ class OpenItemsReport(models.TransientModel):
     filter_account_ids = fields.Many2many(comodel_name='account.account')
     filter_partner_ids = fields.Many2many(comodel_name='res.partner')
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
 
     # Data fields, used to browse report data
     account_ids = fields.One2many(
@@ -131,6 +133,9 @@ class OpenItemsReportMoveLine(models.TransientModel):
         index=True
     )
     operating_unit_id = fields.Many2one(comodel_name='operating.unit')
+    analytic_account_id = fields.Many2one(
+        comodel_name='account.analytic.account')
+
     # Data fields, used to keep link with real object
     move_line_id = fields.Many2one('account.move.line')
 
@@ -521,6 +526,7 @@ INSERT INTO
     amount_total_due,
     amount_residual,
     operating_unit_id,
+    analytic_account_id,
     currency_id,
     amount_total_due_currency,
     amount_residual_currency
@@ -555,6 +561,7 @@ SELECT
     ml.balance,
     ml2.amount_residual,
     ml.operating_unit_id as operating_unit_id,
+    ml.analytic_account_id as analytic_account_id,
     c.id AS currency_id,
     ml.amount_currency,
     ml2.amount_residual_currency
@@ -600,7 +607,12 @@ AND
         if self.operating_unit_ids:
             query_inject_move_line += """
     AND
-    m.operating_unit_id in %s
+    ml.operating_unit_id in %s
+        """
+        if self.analytic_account_ids:
+            query_inject_move_line += """
+    AND
+    ml.analytic_account_id in %s
         """
         if only_empty_partner_line:
             query_inject_move_line += """
@@ -622,32 +634,64 @@ ORDER BY
         full_reconcile_date = fields.Datetime.to_string(
             fields.Datetime.from_string(self.date_at) + timedelta(days=1))
         if self.operating_unit_ids:
-            self.env.cr.execute(
-                query_inject_move_line,
-                (self.date_at,
-                self.id,
-                full_reconcile_date,
-                self.date_at,
-                self.id,
-                full_reconcile_date,
-                self.env.uid,
-                self.id,
-                self.date_at,
-                tuple(self.operating_unit_ids.ids),
-                ))
+            if self.analytic_account_ids:
+                self.env.cr.execute(
+                    query_inject_move_line,
+                    (self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.env.uid,
+                    self.id,
+                    self.date_at,
+                    tuple(self.operating_unit_ids.ids),
+                    tuple(self.analytic_account_ids.ids),
+                    ))
+            else:
+                self.env.cr.execute(
+                    query_inject_move_line,
+                    (self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.env.uid,
+                    self.id,
+                    self.date_at,
+                    tuple(self.operating_unit_ids.ids),
+                    ))
+
         else:
-            self.env.cr.execute(
-                query_inject_move_line,
-                (self.date_at,
-                self.id,
-                full_reconcile_date,
-                self.date_at,
-                self.id,
-                full_reconcile_date,
-                self.env.uid,
-                self.id,
-                self.date_at
-                )
+            if not self.analytic_account_ids:
+                self.env.cr.execute(
+                    query_inject_move_line,
+                    (self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.env.uid,
+                    self.id,
+                    self.date_at
+                    ))
+            else:
+                self.env.cr.execute(
+                    query_inject_move_line,
+                    (self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.date_at,
+                    self.id,
+                    full_reconcile_date,
+                    self.env.uid,
+                    self.id,
+                    self.date_at,
+                    tuple(self.analytic_account_ids.ids),
+                    )
         )
 
     def _compute_partners_and_accounts_cumul(self):

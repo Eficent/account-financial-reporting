@@ -62,6 +62,8 @@ class TrialBalanceReport(models.TransientModel):
     )
     # todo implement
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
 
 class TrialBalanceReportAccount(models.TransientModel):
 

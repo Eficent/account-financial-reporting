@@ -39,6 +39,8 @@ class AgedPartnerBalance(models.TransientModel):
     )
     show_move_line_details = fields.Boolean()
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
 
     @api.onchange('company_id')
     def onchange_company_id(self):
@@ -119,6 +121,7 @@ class AgedPartnerBalance(models.TransientModel):
             'only_posted_moves': self.target_move == 'posted',
             'company_id': self.company_id.id,
             'operating_unit_ids': [(6, 0, self.operating_unit_ids.ids)],
+            'analytic_account_ids': [(6, 0, self.analytic_account_ids.ids)],
             'filter_account_ids': [(6, 0, self.account_ids.ids)],
             'filter_partner_ids': [(6, 0, self.partner_ids.ids)],
             'show_move_line_details': self.show_move_line_details,

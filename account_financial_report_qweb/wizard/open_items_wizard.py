@@ -47,6 +47,8 @@ class OpenItemsReportWizard(models.TransientModel):
         default=lambda self: self._default_partners(),
     )
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
     foreign_currency = fields.Boolean(
         string='Show foreign currency',
         default=lambda self: self._default_foreign_currency(),
@@ -153,6 +155,7 @@ class OpenItemsReportWizard(models.TransientModel):
             'foreign_currency': self.foreign_currency,
             'company_id': self.company_id.id,
             'operating_unit_ids': [(6, 0, self.operating_unit_ids.ids)],
+            'analytic_account_ids': [(6, 0, self.analytic_account_ids.ids)],
             'filter_account_ids': [(6, 0, self.account_ids.ids)],
             'filter_partner_ids': [(6, 0, self.partner_ids.ids)],
         }

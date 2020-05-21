@@ -66,6 +66,8 @@ class ReportJournalQweb(models.TransientModel):
     with_account_name = fields.Boolean()
     # todo implement
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
 
     @api.model
     def _get_move_targets(self):
@@ -284,7 +286,8 @@ class ReportJournalQweb(models.TransientModel):
                 tax_id,
                 taxes_description,
                 company_id,
-                operating_unit_id
+                operating_unit_id,
+                analytic_account_id
             )
             SELECT
                 %s as create_uid,
@@ -331,7 +334,8 @@ class ReportJournalQweb(models.TransientModel):
                     ''
                 END as taxes_description,
                 aml.company_id as company_id,
-                aml.operating_unit_id as operating_unit_id
+                aml.operating_unit_id as operating_unit_id,
+                aml.analytic_account_id as analytic_account_id
             FROM
                 account_move_line aml
             INNER JOIN
@@ -667,7 +671,8 @@ class ReportJournalQwebJournal(models.TransientModel):
     )
 # todo implement
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
-
+    analytic_account_ids = fields.Many2many(
+        comodel_name='account.analytic.account')
 
 class ReportJournalQwebMove(models.TransientModel):
 
