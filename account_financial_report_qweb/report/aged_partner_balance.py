@@ -181,6 +181,7 @@ class AgedPartnerBalanceReportMoveLine(models.TransientModel):
     partner = fields.Char()
     label = fields.Char()
     operating_unit_id = fields.Many2one('operating.unit')
+    analytic_account_id = fields.Many2one('account.analytic.account')
     amount_residual = fields.Float(digits=(16, 2))
     current = fields.Float(digits=(16, 2))
     age_30_days = fields.Float(digits=(16, 2))
