@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem
+        parent="account_financial_report.menu_oca_reports"
+        action="action_tax_report_wizard"
+        id="menu_tax_report_wizard"
+        sequence="60"
+        />
+
+</odoo>

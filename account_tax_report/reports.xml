@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- PDF/HMTL REPORTS -->
+
+    <!-- General Ledger -->
+    <report
+      id="action_print_tax_report_qweb"
+      model="tax.report.wizard"
+      string="Tax Report"
+      report_type="qweb-pdf"
+      menu="False"
+      name="account_tax_report.tax_report"
+      file="account_tax_report.tax_report"
+      />
+    <report
+      id="action_print_tax_report_html"
+      model="tax.report.wizard"
+      string="Tax Report"
+      report_type="qweb-html"
+      menu="False"
+      name="account_tax_report.tax_report"
+      file="account_tax_report.tax_report"
+      />
+
+    <!-- PDF REPORTS : paperformat -->
+
+    <record id="action_print_tax_report_qweb" model="ir.actions.report">
+        <field name="paperformat_id" ref="account_financial_report.report_qweb_paperformat"/>
+    </record>
+
+    <!-- XLSX REPORTS -->
+
+    <record id="action_tax_report_xlsx" model="ir.actions.report">
+        <field name="name">Tax Report XLSX</field>
+        <field name="model">tax.report.wizard</field>
+        <field name="type">ir.actions.report</field>
+        <field name="report_name">a_t_r.tax_report_xlsx</field>
+        <field name="report_type">xlsx</field>
+        <field name="report_file">tax_report</field>
+    </record>
+
+
+</odoo>
