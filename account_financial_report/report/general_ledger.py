@@ -677,6 +677,7 @@ class GeneralLedgerReport(models.AbstractModel):
                     account["move_lines"] = self._recalculate_cumul_balance(
                         account["move_lines"],
                         gen_ld_data[account["id"]]["init_bal"]["balance"],
+                        rec_after_date_to_ids
                     )
                     if account['partners']:
                         account['partners'] = False
