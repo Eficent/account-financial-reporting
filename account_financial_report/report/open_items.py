@@ -58,20 +58,31 @@ class OpenItemsReport(models.AbstractModel):
 
     @api.model
     def _get_new_move_lines_domain(self, new_ml_ids, account_ids, company_id,
-                                   partner_ids, target_moves):
+                                   partner_ids, target_moves, data):
+        if isinstance(new_ml_ids, int):
+            new_ml_ids = [new_ml_ids]
         domain = [('account_id', 'in', account_ids),
-                  ('company_id', '=', company_id),
                   ('id', 'in', new_ml_ids)]
+        if company_id:
+            domain += [('company_id', '=', company_id)]
         if partner_ids:
             domain += [('partner_id', 'in', partner_ids)]
         if target_moves == 'posted':
             domain += [('move_id.state', '=', 'posted')]
         return domain
 
+    @api.model
+    def _get_ml_fields(self):
+        return [
+            'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
+            'partner_id', 'amount_residual', 'date_maturity', 'ref',
+            'debit', 'credit', 'reconciled', 'currency_id', 'amount_currency',
+            'amount_residual_currency']
+
     def _recalculate_move_lines(self, move_lines, debit_ids, credit_ids,
                                 debit_amount, credit_amount, ml_ids,
                                 account_ids, company_id, partner_ids,
-                                target_moves):
+                                target_moves, data):
         debit_ids = set(debit_ids)
         credit_ids = set(credit_ids)
         in_credit_but_not_in_debit = credit_ids - debit_ids
@@ -79,15 +90,10 @@ class OpenItemsReport(models.AbstractModel):
         reconciled_ids = set(reconciled_ids)
         ml_ids = set(ml_ids)
         new_ml_ids = reconciled_ids - ml_ids
-        new_ml_ids = list(new_ml_ids)
         new_domain = self._get_new_move_lines_domain(new_ml_ids, account_ids,
                                                      company_id, partner_ids,
-                                                     target_moves)
-        ml_fields = [
-            'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
-            'partner_id', 'amount_residual', 'date_maturity', 'ref',
-            'debit', 'credit', 'reconciled', 'currency_id', 'amount_currency',
-            'amount_residual_currency']
+                                                     target_moves, data)
+        ml_fields = self._get_ml_fields()
         new_move_lines = self.env['account.move.line'].search_read(
             domain=new_domain, fields=ml_fields
         )
@@ -102,7 +108,7 @@ class OpenItemsReport(models.AbstractModel):
 
     @api.model
     def _get_move_lines_domain(self, company_id, account_ids, partner_ids,
-                               target_move, date_from):
+                               target_move, date_from, data):
         domain = [('account_id', 'in', account_ids),
                   ('company_id', '=', company_id),
                   ('reconciled', '=', False)]
@@ -138,15 +144,11 @@ class OpenItemsReport(models.AbstractModel):
 
     def _get_data(
             self, account_ids, partner_ids, date_at_object,
-            target_move, company_id, date_from):
+            target_move, company_id, date_from, data):
         domain = self._get_move_lines_domain(company_id, account_ids,
                                              partner_ids, target_move,
-                                             date_from)
-        ml_fields = [
-            'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
-            'partner_id', 'amount_residual', 'date_maturity', 'ref',
-            'debit', 'credit', 'reconciled', 'currency_id', 'amount_currency',
-            'amount_residual_currency']
+                                             date_from, data)
+        ml_fields = self._get_ml_fields()
         move_lines = self.env['account.move.line'].search_read(
             domain=domain, fields=ml_fields
         )
@@ -166,7 +168,7 @@ class OpenItemsReport(models.AbstractModel):
                 move_lines = self._recalculate_move_lines(
                     move_lines, debit_ids, credit_ids,
                     debit_amount, credit_amount, ml_ids, account_ids,
-                    company_id, partner_ids, target_move
+                    company_id, partner_ids, target_move, data
                 )
             move_lines = [move_line for move_line in move_lines if
                           move_line['date'] <= date_at_object and not
@@ -298,7 +300,7 @@ class OpenItemsReport(models.AbstractModel):
         move_lines_data, partners_data, journals_data, accounts_data, \
             open_items_move_lines_data = self._get_data(
                 account_ids, partner_ids, date_at_object,
-                target_move, company_id, date_from)
+                target_move, company_id, date_from, data)
 
         total_amount = self._calculate_amounts(open_items_move_lines_data)
         open_items_move_lines_data = self._order_open_items_by_date(

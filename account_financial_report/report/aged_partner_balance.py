@@ -58,7 +58,7 @@ class AgedPartnerBalanceReport(models.AbstractModel):
 
     @api.model
     def _get_move_lines_domain(self, company_id, account_ids, partner_ids,
-                               only_posted_moves, date_from):
+                               only_posted_moves, date_from, data):
         domain = [('account_id', 'in', account_ids),
                   ('company_id', '=', company_id),
                   ('reconciled', '=', False)]
@@ -125,6 +125,13 @@ class AgedPartnerBalanceReport(models.AbstractModel):
         return accounts_partial_reconcile, debit_amount, credit_amount
 
     @api.model
+    def _get_ml_fields(self):
+        return [
+            'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
+            'partner_id', 'amount_residual', 'date_maturity', 'ref',
+            'reconciled']
+
+    @api.model
     def _get_new_move_lines_domain(self, new_ml_ids, account_ids, company_id,
                                    partner_ids, only_posted_moves):
         domain = [('account_id', 'in', account_ids),
@@ -151,10 +158,7 @@ class AgedPartnerBalanceReport(models.AbstractModel):
         new_domain = self._get_new_move_lines_domain(new_ml_ids, account_ids,
                                                      company_id, partner_ids,
                                                      only_posted_moves)
-        ml_fields = [
-            'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
-            'partner_id', 'amount_residual', 'date_maturity', 'ref',
-            'reconciled']
+
         new_move_lines = self.env['account.move.line'].search_read(
             domain=new_domain, fields=ml_fields
         )
@@ -169,10 +173,12 @@ class AgedPartnerBalanceReport(models.AbstractModel):
 
     def _get_move_lines_data(
             self, company_id, account_ids, partner_ids, date_at_object,
-            date_from, only_posted_moves, show_move_line_details):
+            date_from, only_posted_moves, show_move_line_details, data):
         domain = self._get_move_lines_domain(
-            company_id, account_ids, partner_ids, only_posted_moves, date_from
+            company_id, account_ids, partner_ids, only_posted_moves,
+            date_from, data
         )
+        ml_fields = self._get_ml_fields()
         ml_fields = [
             'id', 'name', 'date', 'move_id', 'journal_id', 'account_id',
             'partner_id', 'amount_residual', 'date_maturity', 'ref',
@@ -374,7 +380,7 @@ class AgedPartnerBalanceReport(models.AbstractModel):
         ag_pb_data, accounts_data, partners_data, \
             journals_data = self._get_move_lines_data(
                 company_id, account_ids, partner_ids, date_at_object, date_from,
-                only_posted_moves, show_move_line_details)
+                only_posted_moves, show_move_line_details, data)
         aged_partner_data = self._create_account_list(
             ag_pb_data, accounts_data, partners_data, journals_data,
             show_move_line_details, date_at_object)
