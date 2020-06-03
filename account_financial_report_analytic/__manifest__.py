@@ -7,7 +7,10 @@
     "author": "ForgeFlow," "Odoo Community Association (OCA)",
     "website": "https://odoo-community.org/",
     "depends": ["account_financial_report", "analytic",],
-    "data": ["wizard/open_items_wizard_view.xml",],
+    "data": [
+        "wizard/open_items_wizard_view.xml",
+        "wizard/aged_partner_balance_wizard_view.xml",
+    ],
     "installable": True,
     "license": "AGPL-3",
 }
