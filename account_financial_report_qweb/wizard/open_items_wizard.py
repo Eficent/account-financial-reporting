@@ -49,6 +49,8 @@ class OpenItemsReportWizard(models.TransientModel):
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
     analytic_account_ids = fields.Many2many(
         comodel_name='account.analytic.account')
+    analytic_only = fields.Boolean(string="Only Analytic Items")
+
     foreign_currency = fields.Boolean(
         string='Show foreign currency',
         default=lambda self: self._default_foreign_currency(),
@@ -56,6 +58,13 @@ class OpenItemsReportWizard(models.TransientModel):
              'account currency is not setup through chart of accounts '
              'will display initial and final balance in that currency.'
     )
+
+    @api.onchange('analytic_only')
+    def clear_analytic(self):
+        if self.analytic_only:
+            self.analytic_account_ids = self.env['account.analytic.account'].search([('stage_id.name', 'not ilike', 'Closed')])
+        else:
+            self.analytic_account_ids = False
 
     @api.onchange('company_id')
     def onchange_company_id(self):

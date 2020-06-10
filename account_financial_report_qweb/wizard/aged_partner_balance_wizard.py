@@ -37,10 +37,18 @@ class AgedPartnerBalance(models.TransientModel):
         comodel_name='res.partner',
         string='Filter partners',
     )
-    show_move_line_details = fields.Boolean()
+    show_move_line_details = fields.Boolean(default=True)
     operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
     analytic_account_ids = fields.Many2many(
         comodel_name='account.analytic.account')
+    analytic_only = fields.Boolean(string="Only Analytic Items")
+
+    @api.onchange('analytic_only')
+    def clear_analytic(self):
+        if self.analytic_only:
+            self.analytic_account_ids = self.env['account.analytic.account'].search([('stage_id.name', 'not ilike', 'Closed')])
+        else:
+            self.analytic_account_ids = False
 
     @api.onchange('company_id')
     def onchange_company_id(self):

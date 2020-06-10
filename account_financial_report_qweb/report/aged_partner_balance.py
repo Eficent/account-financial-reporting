@@ -182,6 +182,7 @@ class AgedPartnerBalanceReportMoveLine(models.TransientModel):
     label = fields.Char()
     operating_unit_id = fields.Many2one('operating.unit')
     analytic_account_id = fields.Many2one('account.analytic.account')
+    complete_wbs_code = fields.Char()
     amount_residual = fields.Float(digits=(16, 2))
     current = fields.Float(digits=(16, 2))
     age_30_days = fields.Float(digits=(16, 2))
@@ -486,7 +487,8 @@ INSERT INTO
         age_120_days,
         older,
         operating_unit_id,
-        analytic_account_id
+        analytic_account_id,
+        complete_wbs_code
     )
 SELECT
     rp.id AS report_partner_id,
@@ -534,7 +536,8 @@ SELECT
         THEN rlo.amount_residual
     END AS older,
     rlo.operating_unit_id as operating_unit_id,
-    rlo.analytic_account_id as analytic_account_id
+    rlo.analytic_account_id as analytic_account_id,
+    rlo.complete_wbs_code as complete_wbs_code
 FROM
     date_range,
     report_open_items_qweb_move_line rlo

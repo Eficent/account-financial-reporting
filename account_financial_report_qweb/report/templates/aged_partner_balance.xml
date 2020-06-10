@@ -186,6 +186,7 @@
                     <div class="act_as_cell" style="width: 5.00%;">Journal</div>
                     <!--## account code-->
                     <div class="act_as_cell" style="width: 6.00%;">Account</div>
+                    <div class="act_as_cell" style="width: 6.00%;">Analytic Account</div>
                     <!--## partner-->
                     <div class="act_as_cell" style="width: 10.50%;">Partner
                     </div>
@@ -259,6 +260,16 @@
                                class="o_account_financial_reports_web_action"
                                style="color: black;">
                             <t t-raw="line.account"/></a>
+                        </span>
+                    </div>
+                    <!--## AA code-->
+                    <div class="act_as_cell left">
+                        <span>
+                            <a t-att-data-active-id="line.move_line_id.analytic_account_id.id"
+                               t-att-data-res-model="'account.analytic.account'"
+                               class="o_account_financial_reports_web_action"
+                               style="color: black;">
+                            <t t-raw="line.analytic_account_id.complete_wbs_code"/></a>
                         </span>
                     </div>
                     <!--## partner-->

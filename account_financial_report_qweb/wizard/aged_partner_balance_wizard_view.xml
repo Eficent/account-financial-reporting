@@ -39,10 +39,12 @@
                            widget="many2many_tags"
                            options="{'no_create': True}"
                            colspan="4"/>
+                    <field name="analytic_only" colspan="4"/>
                     <field name="analytic_account_ids"
-                           widget="many2many_tags"
-                           options="{'no_create': True}"
-                           colspan="4"/>
+                        widget="many2many_tags"
+                        invisible="1"
+                        options="{'no_create': True}"
+                        colspan="4"/>
                 </group>
                 <footer>
                     <button name="button_export_html" string="View"

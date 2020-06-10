@@ -145,6 +145,7 @@ class OpenItemsReportMoveLine(models.TransientModel):
     entry = fields.Char()
     journal = fields.Char()
     account = fields.Char()
+    complete_wbs_code = fields.Char()
     partner = fields.Char()
     label = fields.Char()
     amount_total_due = fields.Float(digits=(16, 2))
@@ -529,7 +530,8 @@ INSERT INTO
     analytic_account_id,
     currency_id,
     amount_total_due_currency,
-    amount_residual_currency
+    amount_residual_currency,
+    complete_wbs_code
     )
 SELECT
     rp.id AS report_partner_id,
@@ -564,7 +566,8 @@ SELECT
     ml.analytic_account_id as analytic_account_id,
     c.id AS currency_id,
     ml.amount_currency,
-    ml2.amount_residual_currency
+    ml2.amount_residual_currency,
+    aa.complete_wbs_code
 FROM
     report_open_items_qweb_partner rp
 INNER JOIN
@@ -594,6 +597,8 @@ LEFT JOIN
     account_full_reconcile fr ON ml.full_reconcile_id = fr.id
 LEFT JOIN
     res_currency c ON ml2.currency_id = c.id
+LEFT JOIN
+    account_analytic_account aa ON ml.analytic_account_id = aa.id
 WHERE
     ra.report_id = %s
 AND
