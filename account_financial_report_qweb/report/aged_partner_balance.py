@@ -27,7 +27,7 @@ class AgedPartnerBalanceReport(models.TransientModel):
     company_id = fields.Many2one(comodel_name='res.company')
     filter_account_ids = fields.Many2many(comodel_name='account.account')
     filter_partner_ids = fields.Many2many(comodel_name='res.partner')
-    operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    operating_unit_ids = fields.Many2many(comodel_name='operating.unit', string="Operating Units")
     analytic_account_ids = fields.Many2many(comodel_name='account.analytic.account')
     operating_unit_names = fields.Char(compute='_compute_operating_unit_names')
 

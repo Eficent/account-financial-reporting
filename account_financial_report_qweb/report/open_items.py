@@ -28,7 +28,7 @@ class OpenItemsReport(models.TransientModel):
     company_id = fields.Many2one(comodel_name='res.company')
     filter_account_ids = fields.Many2many(comodel_name='account.account')
     filter_partner_ids = fields.Many2many(comodel_name='res.partner')
-    operating_unit_ids = fields.Many2many(comodel_name='operating.unit')
+    operating_unit_ids = fields.Many2many(comodel_name='operating.unit', string="Operating Units")
     analytic_account_ids = fields.Many2many(
         comodel_name='account.analytic.account')
 
@@ -629,12 +629,12 @@ AND
         if not only_empty_partner_line:
             query_inject_move_line += """
 ORDER BY
-    a.code, p.name, ml.date, ml.id
+    a.code, p.name, ml.analytic_account_id, ml.date, ml.id
             """
         elif only_empty_partner_line:
             query_inject_move_line += """
 ORDER BY
-    a.code, ml.date, ml.id
+    a.code, ml.analytic_account_id, ml.date, ml.id
             """
         full_reconcile_date = fields.Datetime.to_string(
             fields.Datetime.from_string(self.date_at) + timedelta(days=1))
