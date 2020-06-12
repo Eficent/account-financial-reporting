@@ -16,6 +16,16 @@ class AgedPartnerBalanceWizard(models.TransientModel):
     )
     receivable_accounts_only = fields.Boolean(default=True)
     payable_accounts_only = fields.Boolean(default=True)
+    analytic_only = fields.Boolean(string="Only Analytic Items")
+
+    @api.onchange("analytic_only")
+    def clear_analytic(self):
+        if self.analytic_only:
+            self.analytic_account_ids = self.env[
+                "account.analytic.account"
+            ].search([])
+        else:
+            self.analytic_account_ids = False
 
     def _prepare_report_aged_partner_balance(self):
         res = super()._prepare_report_aged_partner_balance()

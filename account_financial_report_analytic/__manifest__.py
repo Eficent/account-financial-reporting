@@ -8,6 +8,7 @@
     "website": "https://odoo-community.org/",
     "depends": ["account_financial_report", "analytic",],
     "data": [
+        "report/templates/aged_partner_balance.xml",
         "wizard/open_items_wizard_view.xml",
         "wizard/aged_partner_balance_wizard_view.xml",
     ],
