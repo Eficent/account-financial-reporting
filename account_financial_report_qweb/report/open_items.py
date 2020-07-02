@@ -18,6 +18,7 @@ class OpenItemsReport(models.TransientModel):
 
     _name = 'report_open_items_qweb'
     _inherit = 'report_qweb_abstract'
+    _order = 'date_at asc'
 
     # Filters fields, used for data computation
     date_at = fields.Date()
