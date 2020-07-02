@@ -154,6 +154,7 @@ class AgedPartnerBalanceReportMoveLine(models.TransientModel):
 
     _name = 'report_aged_partner_balance_qweb_move_line'
     _inherit = 'report_qweb_abstract'
+    _order = 'date asc'
 
     report_partner_id = fields.Many2one(
         comodel_name='report_aged_partner_balance_qweb_partner',

@@ -18,7 +18,6 @@ class OpenItemsReport(models.TransientModel):
 
     _name = 'report_open_items_qweb'
     _inherit = 'report_qweb_abstract'
-    _order = 'date_at asc'
 
     # Filters fields, used for data computation
     date_at = fields.Date()
@@ -119,6 +118,7 @@ class OpenItemsReportMoveLine(models.TransientModel):
 
     _name = 'report_open_items_qweb_move_line'
     _inherit = 'report_qweb_abstract'
+    _order = 'date asc'
 
     report_partner_id = fields.Many2one(
         comodel_name='report_open_items_qweb_partner',
