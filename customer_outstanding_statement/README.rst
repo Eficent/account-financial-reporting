@@ -2,9 +2,9 @@
    :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
    :alt: License: AGPL-3
 
-===================================
-Print Partner Outstanding Statement
-===================================
+=====================
+Print Aging Statement
+=====================
 
 The outstanding statement provides details of all outstanding partner receivables or payables
 up to a particular date. This includes all unpaid invoices, unclaimed refunds and
@@ -27,7 +27,7 @@ Usage
 To use this module, you need to:
 
 #. Go to Customers or Vendors and select one or more
-#. Press 'Action > Partner Outstanding Statement'
+#. Press 'Action > Aging Statement'
 #. Indicate if you want to display receivables or payables, and if you want to display aging buckets
 
 

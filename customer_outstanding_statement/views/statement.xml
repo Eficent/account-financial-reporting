@@ -18,7 +18,7 @@
                         </div>
                     </div>
                     <h4 style="padding-left:15em;padding-top:2em">
-                        Outstanding Statement
+                        Aging Statement
                     </h4>
                     <p>
                         Date: <span t-esc="Date[o.id]"/><br/><!--Today-->
@@ -31,7 +31,7 @@
                             <br t-if="not currency_first"/>
                             <p>
                                 <span t-esc="'Customer' if  account_type == 'receivable' else 'Supplier'"/>
-                                Outstanding Statement at
+                                Aging Statement at
                                 <span t-esc="Date_end[o.id]"/>
                                 in <span t-esc="Currencies[o.id][currency].name"/>:
 
@@ -181,7 +181,7 @@
             model="res.partner"
             report_type="qweb-pdf"
             menu="False"
-            string="Outstanding Statement"
+            string="Aging Statement"
             name="customer_outstanding_statement.statement"
             file="customer_outstanding_statement.statement"
     />
